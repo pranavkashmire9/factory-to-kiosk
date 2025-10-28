@@ -173,6 +173,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
               id="clock-in-image"
               type="file"
               accept="image/*"
+              capture="user"
               disabled={uploadingImage !== null}
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -191,6 +192,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
               id="clock-out-image"
               type="file"
               accept="image/*"
+              capture="user"
               disabled={uploadingImage !== null}
               onChange={(e) => {
                 const file = e.target.files?.[0];
