@@ -119,14 +119,19 @@ const KioskDashboard = () => {
         .select("type, timestamp")
         .eq("kiosk_id", userId)
         .gte("timestamp", `${today}T00:00:00`)
-        .order("timestamp", { ascending: true });
+        .order("timestamp", { ascending: false });
 
       if (clockError) {
         console.error("Error fetching clock logs:", clockError);
       }
 
+      console.log("Clock logs fetched:", clockLogs);
+
+      // Get the most recent clock in and clock out for today
       const clockIn = clockLogs?.find(log => log.type === "in")?.timestamp || null;
       const clockOut = clockLogs?.find(log => log.type === "out")?.timestamp || null;
+
+      console.log("Clock In:", clockIn, "Clock Out:", clockOut);
 
       setStats({
         totalRevenue,

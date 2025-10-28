@@ -101,12 +101,13 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
 
         if (logError) throw logError;
 
+        console.log(`Clock ${type} saved successfully for kiosk:`, kioskId);
         toast.success(`Clocked ${type} successfully!`);
         stopCamera();
         onClockAction();
       } catch (error) {
         toast.error("Error saving clock data");
-        console.error(error);
+        console.error("Clock in/out error:", error);
       }
     }, "image/jpeg", 0.95);
   };
