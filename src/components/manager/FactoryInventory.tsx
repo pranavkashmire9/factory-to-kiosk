@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Send, Trash2 } from "lucide-react";
+import { Plus, Pencil, Send, Trash2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -25,6 +25,8 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   const [sendItem, setSendItem] = useState<any>(null);
   const [selectedKiosk, setSelectedKiosk] = useState("");
   const [sendQuantity, setSendQuantity] = useState("");
+  const [breakdownItem, setBreakdownItem] = useState<any>(null);
+  const [breakdownData, setBreakdownData] = useState<any[]>([]);
   
   const [newItem, setNewItem] = useState({
     name: "",
@@ -174,6 +176,31 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     }
   };
 
+  const fetchBreakdownData = async (itemName: string) => {
+    const { data, error } = await supabase
+      .from("kiosk_inventory")
+      .select(`
+        stock,
+        kiosk_id,
+        profiles!kiosk_inventory_kiosk_id_fkey(kiosk_name)
+      `)
+      .eq("item_name", itemName);
+
+    if (error) {
+      toast.error("Error fetching breakdown data");
+      console.error(error);
+      return [];
+    }
+
+    return data || [];
+  };
+
+  const handleBreakdownClick = async (item: any) => {
+    setBreakdownItem(item);
+    const data = await fetchBreakdownData(item.name);
+    setBreakdownData(data);
+  };
+
   const handleSendItem = async () => {
     if (!sendItem || !selectedKiosk || !sendQuantity) {
       toast.error("Please select kiosk and quantity");
@@ -291,7 +318,18 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>∞</TableCell>
-                <TableCell>{kioskStockTotals[item.name] || 0}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span>{kioskStockTotals[item.name] || 0}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleBreakdownClick(item)}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
                 <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge variant="default">In Stock</Badge>
@@ -405,6 +443,41 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Breakdown Modal */}
+      <Dialog open={!!breakdownItem} onOpenChange={() => setBreakdownItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Stock Breakdown - {breakdownItem?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {breakdownData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No stock found in any kiosk
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kiosk Name</TableHead>
+                    <TableHead className="text-right">Stock</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {breakdownData.map((item: any, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {item.profiles?.kiosk_name || 'Unknown Kiosk'}
+                      </TableCell>
+                      <TableCell className="text-right">{item.stock}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
