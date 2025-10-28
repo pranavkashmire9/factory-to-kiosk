@@ -20,30 +20,29 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
-interface WastageModalProps {
+interface ItemWastageModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  orderId: string;
   kioskId: string;
-  items: Array<{ name: string; quantity: number }>;
+  itemName: string;
+  currentStock: number;
   onWastageAdded: () => void;
 }
 
-const WastageModal = ({
+const ItemWastageModal = ({
   open,
   onOpenChange,
-  orderId,
   kioskId,
-  items,
+  itemName,
+  currentStock,
   onWastageAdded,
-}: WastageModalProps) => {
-  const [selectedItem, setSelectedItem] = useState<string>("");
+}: ItemWastageModalProps) => {
   const [quantity, setQuantity] = useState<string>("");
   const [reason, setReason] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!selectedItem || !quantity || !reason) {
+    if (!quantity || !reason) {
       toast({
         title: "Missing Information",
         description: "Please fill in all fields",
@@ -62,16 +61,25 @@ const WastageModal = ({
       return;
     }
 
+    if (wastageQty > currentStock) {
+      toast({
+        title: "Insufficient Stock",
+        description: `Only ${currentStock} units available`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Insert wastage record
+      // Insert wastage record (without order_id since it's direct wastage)
       const { error: wastageError } = await supabase
         .from("wastage")
         .insert({
           kiosk_id: kioskId,
-          order_id: orderId,
-          item_name: selectedItem,
+          order_id: "00000000-0000-0000-0000-000000000000", // Placeholder UUID for direct wastage
+          item_name: itemName,
           quantity: wastageQty,
           reason: reason,
         });
@@ -79,35 +87,28 @@ const WastageModal = ({
       if (wastageError) throw wastageError;
 
       // Subtract from kiosk inventory
-      const { data: currentStock, error: fetchError } = await supabase
-        .from("kiosk_inventory")
-        .select("stock")
-        .eq("kiosk_id", kioskId)
-        .eq("item_name", selectedItem)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const newStock = Math.max(0, currentStock.stock - wastageQty);
+      const newStock = Math.max(0, currentStock - wastageQty);
 
       const { error: updateError } = await supabase
         .from("kiosk_inventory")
-        .update({ stock: newStock })
+        .update({ 
+          stock: newStock,
+          status: newStock === 0 ? "Out of Stock" : newStock < 10 ? "Low Stock" : "In Stock"
+        })
         .eq("kiosk_id", kioskId)
-        .eq("item_name", selectedItem);
+        .eq("item_name", itemName);
 
       if (updateError) throw updateError;
 
       toast({
         title: "Wastage Recorded",
-        description: `${wastageQty} units of ${selectedItem} marked as wastage`,
+        description: `${wastageQty} units of ${itemName} marked as wastage`,
       });
 
       onWastageAdded();
       onOpenChange(false);
       
       // Reset form
-      setSelectedItem("");
       setQuantity("");
       setReason("");
     } catch (error: any) {
@@ -126,35 +127,20 @@ const WastageModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Wastage</DialogTitle>
+          <DialogTitle>Add Wastage - {itemName}</DialogTitle>
           <DialogDescription>
-            Record wastage for items in this order
+            Record wastage for this item
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="item">Item</Label>
-            <Select value={selectedItem} onValueChange={setSelectedItem}>
-              <SelectTrigger id="item">
-                <SelectValue placeholder="Select item" />
-              </SelectTrigger>
-              <SelectContent>
-                {items.map((item, idx) => (
-                  <SelectItem key={idx} value={item.name}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="quantity">Quantity</Label>
+            <Label htmlFor="quantity">Quantity (Available: {currentStock})</Label>
             <Input
               id="quantity"
               type="number"
               min="1"
+              max={currentStock}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="Enter quantity wasted"
@@ -193,4 +179,4 @@ const WastageModal = ({
   );
 };
 
-export default WastageModal;
+export default ItemWastageModal;

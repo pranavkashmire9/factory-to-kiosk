@@ -8,8 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Plus, Minus, ShoppingCart, ImageIcon } from "lucide-react";
+import { Plus, Minus, ShoppingCart, ImageIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import ItemWastageModal from "./ItemWastageModal";
 
 interface KioskSalesProps {
   kioskId: string;
@@ -48,9 +49,16 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
   const [currentOrder, setCurrentOrder] = useState<any[]>([]);
   const [paymentType, setPaymentType] = useState<"Cash" | "UPI">("Cash");
   const [loading, setLoading] = useState(true);
+  const [wastageModal, setWastageModal] = useState<{ open: boolean; itemName: string; currentStock: number }>({
+    open: false,
+    itemName: "",
+    currentStock: 0,
+  });
+  const [wastageData, setWastageData] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     fetchItems();
+    fetchWastageData();
     setupRealtimeSubscription();
   }, []);
 
@@ -105,8 +113,26 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
     setLoading(false);
   };
 
+  const fetchWastageData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: wastage } = await supabase
+      .from("wastage")
+      .select("item_name, quantity")
+      .eq("kiosk_id", kioskId)
+      .gte("timestamp", today);
+
+    if (wastage) {
+      const wastageMap = new Map<string, number>();
+      wastage.forEach(w => {
+        wastageMap.set(w.item_name, (wastageMap.get(w.item_name) || 0) + w.quantity);
+      });
+      setWastageData(wastageMap);
+    }
+  };
+
   const setupRealtimeSubscription = () => {
-    const channel = supabase
+    const inventoryChannel = supabase
       .channel('kiosk-inventory-sales')
       .on(
         'postgres_changes',
@@ -115,8 +141,18 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
       )
       .subscribe();
 
+    const wastageChannel = supabase
+      .channel('wastage-sales-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'wastage', filter: `kiosk_id=eq.${kioskId}` },
+        () => fetchWastageData()
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(inventoryChannel);
+      supabase.removeChannel(wastageChannel);
     };
   };
 
@@ -267,6 +303,8 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
                     <TableHead className="text-xs sm:text-sm">Price</TableHead>
                     <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Status</TableHead>
                     <TableHead className="text-xs sm:text-sm">Action</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Wastage</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Waste Count</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,6 +335,25 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
                           <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
                           <span className="hidden sm:inline">Add</span>
                         </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setWastageModal({
+                            open: true,
+                            itemName: item.item_name,
+                            currentStock: item.stock,
+                          })}
+                          disabled={item.stock === 0 || (typeof item.id === 'string' && item.id.startsWith('placeholder-'))}
+                          className="text-xs h-7 sm:h-8"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Wastage</span>
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm font-medium">
+                        {wastageData.get(item.item_name) || 0}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -388,6 +445,18 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
           )}
         </CardContent>
       </Card>
+
+      <ItemWastageModal
+        open={wastageModal.open}
+        onOpenChange={(open) => setWastageModal({ ...wastageModal, open })}
+        kioskId={kioskId}
+        itemName={wastageModal.itemName}
+        currentStock={wastageModal.currentStock}
+        onWastageAdded={() => {
+          fetchWastageData();
+          fetchItems();
+        }}
+      />
     </div>
   );
 };
