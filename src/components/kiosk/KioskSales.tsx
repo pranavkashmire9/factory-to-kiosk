@@ -196,36 +196,41 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
       return;
     }
 
-    // Update inventory stocks
-    for (const item of currentOrder) {
+    // Update inventory stocks in parallel
+    const stockUpdates = currentOrder.map(item => {
       const newStock = item.stock - item.quantity;
-      const { error } = await supabase
+      return supabase
         .from("kiosk_inventory")
         .update({ 
           stock: newStock,
           status: newStock === 0 ? "Out of Stock" : newStock < 10 ? "Low Stock" : "In Stock"
         })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .then(({ error }) => {
+          if (error) console.error("Error updating stock:", error);
+          return { item, newStock };
+        });
+    });
 
-      if (error) {
-        console.error("Error updating stock:", error);
-      }
+    const stockResults = await Promise.all(stockUpdates);
 
-      // Auto-create purchase order if stock < 10
-      if (newStock < 10) {
-        const { error: poError } = await supabase
+    // Create purchase orders in parallel for low stock items
+    const purchaseOrders = stockResults
+      .filter(({ newStock }) => newStock < 10)
+      .map(({ item, newStock }) =>
+        supabase
           .from("purchase_orders")
           .insert({
             kiosk_id: kioskId,
             items: [{ name: item.item_name, quantity: 50 - newStock }],
             status: "Preparing"
-          });
+          })
+          .then(({ error }) => {
+            if (error) console.error("Error creating purchase order:", error);
+          })
+      );
 
-        if (poError) {
-          console.error("Error creating purchase order:", poError);
-        }
-      }
-    }
+    await Promise.all(purchaseOrders);
 
     toast.success("Order placed successfully!");
     setCurrentOrder([]);
