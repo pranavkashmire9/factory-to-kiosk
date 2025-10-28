@@ -15,6 +15,33 @@ interface KioskSalesProps {
   onOrderComplete: () => void;
 }
 
+// Predefined menu items that should always be visible
+const PREDEFINED_ITEMS = [
+  { name: "Pani Puri", price: 40 },
+  { name: "Shev Puri (J)", price: 60 },
+  { name: "Bhel Puri (J)", price: 50 },
+  { name: "Dry Masala Puri", price: 40 },
+  { name: "Ragda Pattice", price: 60 },
+  { name: "Ragda Samosa", price: 50 },
+  { name: "Samosa Chaat", price: 50 },
+  { name: "Dahi Shev Puri (J)", price: 70 },
+  { name: "Dahi Aloo Chaat", price: 50 },
+  { name: "Dahi Bhel Puri (J)", price: 70 },
+  { name: "Tokri Chaat", price: 80 },
+  { name: "Basket Chaat", price: 80 },
+  { name: "Papdi Chaat", price: 70 },
+  { name: "Cheese Bhel (J)", price: 100 },
+  { name: "Cheese Shev Puri (J)", price: 100 },
+  { name: "Dahi Wada (J)", price: 70 },
+  { name: "Veg Sandwich", price: 50 },
+  { name: "Veg Cheese Sandwich", price: 70 },
+  { name: "Veg Cheese Grill Sandwich", price: 100 },
+  { name: "Veg Grill Sandwich", price: 70 },
+  { name: "Chocolate Sandwich", price: 80 },
+  { name: "Chocolate Cheese Sandwich", price: 100 },
+  { name: "Cheese Chilly Toast", price: 90 },
+];
+
 const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
   const [items, setItems] = useState<any[]>([]);
   const [currentOrder, setCurrentOrder] = useState<any[]>([]);
@@ -36,9 +63,44 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
     if (error) {
       toast.error("Error fetching items");
       console.error(error);
-    } else {
-      setItems(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Merge predefined items with database inventory
+    const dbInventory = data || [];
+    const mergedItems = PREDEFINED_ITEMS.map((predefinedItem) => {
+      // Check if item exists in database
+      const dbItem = dbInventory.find(
+        (item) => item.item_name.toLowerCase() === predefinedItem.name.toLowerCase()
+      );
+
+      if (dbItem) {
+        // Use database values if item exists
+        return dbItem;
+      } else {
+        // Create a placeholder item with predefined values
+        return {
+          id: `placeholder-${predefinedItem.name}`,
+          item_name: predefinedItem.name,
+          stock: 0,
+          price: predefinedItem.price,
+          status: "Out of Stock",
+          kiosk_id: kioskId,
+        };
+      }
+    });
+
+    // Also include any items from database that are not in predefined list
+    const extraItems = dbInventory.filter(
+      (dbItem) =>
+        !PREDEFINED_ITEMS.some(
+          (predefined) =>
+            predefined.name.toLowerCase() === dbItem.item_name.toLowerCase()
+        )
+    );
+
+    setItems([...mergedItems, ...extraItems]);
     setLoading(false);
   };
 
@@ -58,6 +120,12 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
   };
 
   const addToOrder = (item: any) => {
+    // Check if it's a placeholder item (not in database)
+    if (typeof item.id === 'string' && item.id.startsWith('placeholder-')) {
+      toast.error("Item not available in inventory yet");
+      return;
+    }
+
     if (item.stock === 0) {
       toast.error("Item out of stock");
       return;
@@ -204,7 +272,7 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
                     <Button
                       size="sm"
                       onClick={() => addToOrder(item)}
-                      disabled={item.stock === 0}
+                      disabled={item.stock === 0 || (typeof item.id === 'string' && item.id.startsWith('placeholder-'))}
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add
