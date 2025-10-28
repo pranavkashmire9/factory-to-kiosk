@@ -48,16 +48,22 @@ const KioskDashboard = () => {
         .from("profiles")
         .select("role, kiosk_name")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error("Error fetching profile:", profileError);
         toast.error("Error loading profile");
-        setLoading(false);
+        navigate("/auth");
         return;
       }
 
-      if (profile?.role !== "kiosk") {
+      if (!profile) {
+        toast.error("Profile not found. Please contact administrator.");
+        navigate("/auth");
+        return;
+      }
+
+      if (profile.role !== "kiosk") {
         navigate("/manager-dashboard");
         return;
       }
@@ -178,7 +184,7 @@ const KioskDashboard = () => {
     day: 'numeric'
   });
 
-  if (loading) {
+  if (loading || !kioskId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl">Loading...</div>
