@@ -196,11 +196,30 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       toast.error("Error updating item");
       console.error(error);
     } else {
-      // Update kiosk inventories with the new image
-      await supabase
+      // Sync image to all kiosk inventories with the same item name (case-insensitive)
+      const { data: kioskItems, error: fetchKioskError } = await supabase
         .from("kiosk_inventory")
-        .update({ image_url: imageUrl })
-        .eq("item_name", editItem.name);
+        .select("id, item_name")
+        .ilike("item_name", editItem.name);
+
+      if (fetchKioskError) {
+        console.error("Error fetching kiosk items:", fetchKioskError);
+        toast.error("Failed to sync image to kiosks");
+      } else if (kioskItems && kioskItems.length > 0) {
+        // Update each matching kiosk inventory item
+        const kioskIds = kioskItems.map(item => item.id);
+        const { error: kioskError } = await supabase
+          .from("kiosk_inventory")
+          .update({ image_url: imageUrl })
+          .in("id", kioskIds);
+
+        if (kioskError) {
+          console.error("Error syncing image to kiosks:", kioskError);
+          toast.error("Failed to sync image to kiosks");
+        } else {
+          console.log(`Synced image to ${kioskItems.length} kiosk inventory items`);
+        }
+      }
 
       toast.success("Item updated successfully");
       setEditItem(null);
