@@ -10,7 +10,6 @@ import FactoryInventory from "@/components/manager/FactoryInventory";
 import PurchaseOrders from "@/components/manager/PurchaseOrders";
 import TodaysReport from "@/components/manager/TodaysReport";
 import PastAnalytics from "@/components/manager/PastAnalytics";
-import ResetTodaysData from "@/components/manager/ResetTodaysData";
 import LanguageSelector from "@/components/LanguageSelector";
 
 const ManagerDashboard = () => {
@@ -190,7 +189,6 @@ const ManagerDashboard = () => {
             <p className="text-muted-foreground">{currentDate}</p>
           </div>
           <div className="flex gap-2">
-            <ResetTodaysData onReset={fetchStats} />
             <PastAnalytics />
             <LanguageSelector />
             <Button variant="outline" onClick={handleSignOut}>{t('common.signOut')}</Button>
