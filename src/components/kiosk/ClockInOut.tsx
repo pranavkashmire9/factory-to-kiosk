@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, LogIn, LogOut, Camera, Image as ImageIcon, X } from "lucide-react";
+import { Clock, LogIn, LogOut, Camera, Image as ImageIcon, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ClockInOutProps {
   kioskId: string;
@@ -33,6 +34,8 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const clockInFileRef = useRef<HTMLInputElement>(null);
+  const clockOutFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchRecentImages();
@@ -225,6 +228,60 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: "in" | "out") => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    setUploadingImage(type);
+    try {
+      const timestamp = new Date().toISOString();
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${kioskId}/${type}_${timestamp}.${fileExt}`;
+
+      // Upload image to storage
+      const { error: uploadError } = await supabase.storage
+        .from("clockin-photos")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("clockin-photos")
+        .getPublicUrl(fileName);
+
+      // Insert clock log with image URL
+      const { error: logError } = await supabase
+        .from("clock_logs")
+        .insert({
+          kiosk_id: kioskId,
+          type: type,
+          timestamp: timestamp,
+          image_url: publicUrl,
+        });
+
+      if (logError) throw logError;
+
+      toast.success(`Clock ${type} image uploaded successfully!`);
+      fetchRecentImages();
+      onClockAction();
+      
+      // Reset file input
+      event.target.value = "";
+    } catch (error: any) {
+      console.error("File upload error:", error);
+      toast.error(`Error uploading image: ${error.message || 'Unknown error'}`);
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -266,6 +323,42 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
             Recording timestamp...
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 border-t">
+          <Input
+            ref={clockInFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileUpload(e, "in")}
+          />
+          <Button
+            onClick={() => clockInFileRef.current?.click()}
+            variant="outline"
+            className="h-20 sm:h-24 flex-col gap-2"
+            disabled={uploadingImage !== null}
+          >
+            <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm">Upload Clock In Image</span>
+          </Button>
+
+          <Input
+            ref={clockOutFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileUpload(e, "out")}
+          />
+          <Button
+            onClick={() => clockOutFileRef.current?.click()}
+            variant="outline"
+            className="h-20 sm:h-24 flex-col gap-2"
+            disabled={uploadingImage !== null}
+          >
+            <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm">Upload Clock Out Image</span>
+          </Button>
+        </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 border-t">
           <Button
