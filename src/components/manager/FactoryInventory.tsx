@@ -182,9 +182,13 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       .select(`
         stock,
         kiosk_id,
-        profiles!kiosk_inventory_kiosk_id_fkey(kiosk_name)
+        profiles!kiosk_inventory_kiosk_id_fkey(
+          kiosk_name,
+          role
+        )
       `)
-      .eq("item_name", itemName);
+      .eq("item_name", itemName)
+      .gt("stock", 0);
 
     if (error) {
       toast.error("Error fetching breakdown data");
@@ -192,7 +196,12 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       return [];
     }
 
-    return data || [];
+    // Filter to only include kiosks with valid profiles and kiosk role
+    const validData = (data || []).filter(
+      (item: any) => item.profiles && item.profiles.role === 'kiosk' && item.profiles.kiosk_name
+    );
+
+    return validData;
   };
 
   const handleBreakdownClick = async (item: any) => {
