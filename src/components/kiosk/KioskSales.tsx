@@ -324,6 +324,15 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => addToOrder(item)}
+                          disabled={item.quantity >= item.stock}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
                         <span className="font-bold text-xs sm:text-sm min-w-[50px] text-right">
                           ₹{(Number(item.price) * item.quantity).toFixed(0)}
                         </span>
