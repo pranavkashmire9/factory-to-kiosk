@@ -196,7 +196,8 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       toast.error("Error updating item");
       console.error(error);
     } else {
-      // Sync image to all kiosk inventories with the same item name (case-insensitive)
+      // Sync image and price to all kiosks
+      // First, update existing kiosk_inventory items with this item name
       const { data: kioskItems, error: fetchKioskError } = await supabase
         .from("kiosk_inventory")
         .select("id, item_name")
@@ -206,7 +207,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
         console.error("Error fetching kiosk items:", fetchKioskError);
         toast.error("Failed to sync to kiosks");
       } else if (kioskItems && kioskItems.length > 0) {
-        // Update each matching kiosk inventory item with image and price
+        // Update existing kiosk inventory items with image and price
         const kioskIds = kioskItems.map(item => item.id);
         const { error: kioskError } = await supabase
           .from("kiosk_inventory")
@@ -224,7 +225,48 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
         }
       }
 
-      toast.success("Item updated successfully");
+      // Create new kiosk_inventory entries for kiosks that don't have this item yet
+      const { data: allKiosks } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "kiosk");
+
+      if (allKiosks && allKiosks.length > 0) {
+        // Get list of kiosk IDs that already have this item
+        const { data: existingEntries } = await supabase
+          .from("kiosk_inventory")
+          .select("kiosk_id")
+          .eq("item_name", editItem.name);
+        
+        const existingKioskIds = (existingEntries || []).map(entry => entry.kiosk_id);
+        
+        const kiosksWithoutItem = allKiosks.filter(
+          kiosk => !existingKioskIds.includes(kiosk.id)
+        );
+
+        if (kiosksWithoutItem.length > 0) {
+          const newEntries = kiosksWithoutItem.map(kiosk => ({
+            kiosk_id: kiosk.id,
+            item_name: editItem.name,
+            stock: 0,
+            price: price,
+            status: "Out of Stock",
+            image_url: imageUrl
+          }));
+
+          const { error: insertError } = await supabase
+            .from("kiosk_inventory")
+            .insert(newEntries);
+
+          if (insertError) {
+            console.error("Error creating kiosk entries:", insertError);
+          } else {
+            console.log(`Created ${newEntries.length} new kiosk inventory entries`);
+          }
+        }
+      }
+
+      toast.success("Item updated and synced to all kiosks");
       setEditItem(null);
       setImageFile(null);
       fetchInventory();
