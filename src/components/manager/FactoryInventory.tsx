@@ -19,6 +19,7 @@ interface FactoryInventoryProps {
 const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [kiosks, setKiosks] = useState<any[]>([]);
+  const [kioskStockTotals, setKioskStockTotals] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<any>(null);
   const [sendItem, setSendItem] = useState<any>(null);
@@ -33,6 +34,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   useEffect(() => {
     fetchInventory();
     fetchKiosks();
+    fetchKioskStockTotals();
     setupRealtimeSubscription();
   }, []);
 
@@ -60,8 +62,26 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     setKiosks(data || []);
   };
 
+  const fetchKioskStockTotals = async () => {
+    const { data } = await supabase
+      .from("kiosk_inventory")
+      .select("item_name, stock");
+
+    if (data) {
+      const totals: Record<string, number> = {};
+      data.forEach((item) => {
+        if (totals[item.item_name]) {
+          totals[item.item_name] += item.stock;
+        } else {
+          totals[item.item_name] = item.stock;
+        }
+      });
+      setKioskStockTotals(totals);
+    }
+  };
+
   const setupRealtimeSubscription = () => {
-    const channel = supabase
+    const factoryChannel = supabase
       .channel('factory-inventory-changes')
       .on(
         'postgres_changes',
@@ -70,8 +90,18 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       )
       .subscribe();
 
+    const kioskChannel = supabase
+      .channel('kiosk-inventory-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'kiosk_inventory' },
+        () => fetchKioskStockTotals()
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(factoryChannel);
+      supabase.removeChannel(kioskChannel);
     };
   };
 
@@ -198,6 +228,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     setSelectedKiosk("");
     setSendQuantity("");
     fetchInventory();
+    fetchKioskStockTotals();
     onUpdate();
   };
 
@@ -249,6 +280,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
             <TableRow>
               <TableHead>Sweet Name</TableHead>
               <TableHead>Stock</TableHead>
+              <TableHead>Total Stock Across Kiosks</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -259,6 +291,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 <TableCell>∞</TableCell>
+                <TableCell>{kioskStockTotals[item.name] || 0}</TableCell>
                 <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge variant="default">In Stock</Badge>
