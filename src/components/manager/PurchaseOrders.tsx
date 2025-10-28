@@ -115,7 +115,7 @@ const PurchaseOrders = () => {
           .from("kiosk_inventory")
           .select("*")
           .eq("kiosk_id", order.kiosk_id)
-          .ilike("item_name", item.name)
+          .eq("item_name", item.name)
           .maybeSingle();
 
         if (existingItem) {
@@ -129,7 +129,7 @@ const PurchaseOrders = () => {
           const { data: factoryItem } = await supabase
             .from("factory_inventory")
             .select("*")
-            .ilike("name", item.name)
+            .eq("name", item.name)
             .maybeSingle();
 
           if (factoryItem) {

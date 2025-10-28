@@ -200,7 +200,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       const { data: kioskItems, error: fetchKioskError } = await supabase
         .from("kiosk_inventory")
         .select("id, item_name")
-        .ilike("item_name", editItem.name);
+        .eq("item_name", editItem.name);
 
       if (fetchKioskError) {
         console.error("Error fetching kiosk items:", fetchKioskError);
