@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, LogIn, LogOut, Upload, Image as ImageIcon } from "lucide-react";
+import { Clock, LogIn, LogOut, Camera, Image as ImageIcon, X } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ClockInOutProps {
   kioskId: string;
@@ -18,14 +17,31 @@ interface ClockImage {
   timestamp: string;
 }
 
+interface CapturedImage {
+  blob: Blob;
+  dataUrl: string;
+  timestamp: string;
+}
+
 const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState<"in" | "out" | null>(null);
   const [recentImages, setRecentImages] = useState<ClockImage[]>([]);
+  const [cameraOpen, setCameraOpen] = useState<"in" | "out" | null>(null);
+  const [capturedImage, setCapturedImage] = useState<CapturedImage | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     fetchRecentImages();
   }, [kioskId]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   const fetchRecentImages = async () => {
     try {
@@ -44,17 +60,66 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
     }
   };
 
-  const handleImageUpload = async (type: "in" | "out", file: File) => {
-    setUploadingImage(type);
+  const openCamera = async (type: "in" | "out") => {
     try {
-      const timestamp = new Date().toISOString();
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${kioskId}/${type}_${timestamp}.${fileExt}`;
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "user" },
+        audio: false 
+      });
+      streamRef.current = stream;
+      setCameraOpen(type);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error: any) {
+      console.error("Camera access error:", error);
+      toast.error("Could not access camera");
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    if (!context) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        const timestamp = new Date().toISOString();
+        setCapturedImage({ blob, dataUrl, timestamp });
+        stopCamera();
+      }
+    }, "image/jpeg", 0.9);
+  };
+
+  const submitImage = async () => {
+    if (!capturedImage || !cameraOpen) return;
+
+    setUploadingImage(cameraOpen);
+    try {
+      const fileExt = "jpg";
+      const fileName = `${kioskId}/${cameraOpen}_${capturedImage.timestamp}.${fileExt}`;
 
       // Upload image to storage
       const { error: uploadError } = await supabase.storage
         .from("clockin-photos")
-        .upload(fileName, file);
+        .upload(fileName, capturedImage.blob);
 
       if (uploadError) throw uploadError;
 
@@ -63,27 +128,34 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
         .from("clockin-photos")
         .getPublicUrl(fileName);
 
-      // Insert clock log with image URL
+      // Insert clock log with image URL and captured timestamp
       const { error: logError } = await supabase
         .from("clock_logs")
         .insert({
           kiosk_id: kioskId,
-          type: type,
-          timestamp: timestamp,
+          type: cameraOpen,
+          timestamp: capturedImage.timestamp,
           image_url: publicUrl,
         });
 
       if (logError) throw logError;
 
-      toast.success(`Clock ${type} image uploaded successfully!`);
+      toast.success(`Clock ${cameraOpen} image uploaded successfully!`);
       fetchRecentImages();
       onClockAction();
+      closeCamera();
     } catch (error: any) {
       console.error("Image upload error:", error);
       toast.error(`Error uploading image: ${error.message || 'Unknown error'}`);
     } finally {
       setUploadingImage(null);
     }
+  };
+
+  const closeCamera = () => {
+    stopCamera();
+    setCameraOpen(null);
+    setCapturedImage(null);
   };
 
   const handleClock = async (type: "in" | "out") => {
@@ -164,43 +236,25 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
         )}
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 border-t">
-          <div className="space-y-2">
-            <Label htmlFor="clock-in-image" className="text-xs sm:text-sm flex items-center gap-1">
-              <Upload className="h-3 w-3" />
-              Clock In Image
-            </Label>
-            <Input
-              id="clock-in-image"
-              type="file"
-              accept="image/*"
-              capture="user"
-              disabled={uploadingImage !== null}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload("in", file);
-              }}
-              className="text-xs cursor-pointer"
-            />
-          </div>
+          <Button
+            onClick={() => openCamera("in")}
+            variant="outline"
+            className="h-20 sm:h-24 flex-col gap-2"
+            disabled={uploadingImage !== null}
+          >
+            <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm">Take Clock In Photo</span>
+          </Button>
 
-          <div className="space-y-2">
-            <Label htmlFor="clock-out-image" className="text-xs sm:text-sm flex items-center gap-1">
-              <Upload className="h-3 w-3" />
-              Clock Out Image
-            </Label>
-            <Input
-              id="clock-out-image"
-              type="file"
-              accept="image/*"
-              capture="user"
-              disabled={uploadingImage !== null}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleImageUpload("out", file);
-              }}
-              className="text-xs cursor-pointer"
-            />
-          </div>
+          <Button
+            onClick={() => openCamera("out")}
+            variant="outline"
+            className="h-20 sm:h-24 flex-col gap-2"
+            disabled={uploadingImage !== null}
+          >
+            <Camera className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-xs sm:text-sm">Take Clock Out Photo</span>
+          </Button>
         </div>
 
         {uploadingImage && (
@@ -233,6 +287,66 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={cameraOpen !== null} onOpenChange={(open) => !open && closeCamera()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Take Clock {cameraOpen === "in" ? "In" : "Out"} Photo
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {!capturedImage ? (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-md border"
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                <Button
+                  onClick={capturePhoto}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Camera className="h-5 w-5 mr-2" />
+                  Capture Photo
+                </Button>
+              </>
+            ) : (
+              <>
+                <img
+                  src={capturedImage.dataUrl}
+                  alt="Captured"
+                  className="w-full rounded-md border"
+                />
+                <div className="text-xs text-muted-foreground text-center">
+                  Timestamp: {new Date(capturedImage.timestamp).toLocaleString()}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => setCapturedImage(null)}
+                    variant="outline"
+                    size="lg"
+                  >
+                    <X className="h-5 w-5 mr-2" />
+                    Retake
+                  </Button>
+                  <Button
+                    onClick={submitImage}
+                    disabled={uploadingImage !== null}
+                    size="lg"
+                  >
+                    {uploadingImage ? "Submitting..." : "Submit"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
