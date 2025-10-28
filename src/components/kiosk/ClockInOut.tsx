@@ -12,6 +12,7 @@ interface ClockInOutProps {
 
 const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const [capturing, setCapturing] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,9 +24,14 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       });
       setStream(mediaStream);
       setCapturing(true);
+      setVideoReady(false);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to be ready
+        videoRef.current.onloadeddata = () => {
+          setVideoReady(true);
+        };
       }
     } catch (error) {
       toast.error("Could not access camera");
@@ -39,6 +45,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       setStream(null);
     }
     setCapturing(false);
+    setVideoReady(false);
   };
 
   const captureAndClock = async (type: "in" | "out") => {
@@ -136,11 +143,26 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
             </div>
             <canvas ref={canvasRef} className="hidden" />
             
+            {!videoReady && (
+              <div className="text-sm text-muted-foreground text-center">
+                Preparing camera...
+              </div>
+            )}
+            
             <div className="flex gap-4">
-              <Button onClick={() => captureAndClock("in")} className="flex-1">
+              <Button 
+                onClick={() => captureAndClock("in")} 
+                className="flex-1"
+                disabled={!videoReady}
+              >
                 Clock In
               </Button>
-              <Button onClick={() => captureAndClock("out")} variant="secondary" className="flex-1">
+              <Button 
+                onClick={() => captureAndClock("out")} 
+                variant="secondary" 
+                className="flex-1"
+                disabled={!videoReady}
+              >
                 Clock Out
               </Button>
             </div>
