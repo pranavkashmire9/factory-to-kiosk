@@ -26,12 +26,16 @@ const PurchaseOrders = () => {
   }, []);
 
   const fetchOrders = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
     const { data, error } = await supabase
       .from("purchase_orders")
       .select(`
         *,
         profiles:kiosk_id (kiosk_name)
       `)
+      .gte("created_at", `${today}T00:00:00`)
+      .lte("created_at", `${today}T23:59:59`)
       .order("created_at", { ascending: false });
 
     if (error) {
