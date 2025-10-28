@@ -222,7 +222,7 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
           .from("purchase_orders")
           .insert({
             kiosk_id: kioskId,
-            items: [{ name: item.item_name, quantity: 50 - newStock }],
+            items: [{ name: item.item_name, quantity: 20 - newStock }],
             status: "Preparing"
           })
           .then(({ error }) => {
