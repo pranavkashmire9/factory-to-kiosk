@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Receipt } from "lucide-react";
 
 interface RecentSalesProps {
@@ -54,51 +55,55 @@ const RecentSales = ({ kioskId }: RecentSalesProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Receipt className="h-5 w-5" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
           Recent Sales (Today)
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6">
         {sales.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
+          <div className="text-center text-muted-foreground py-6 sm:py-8 text-sm sm:text-base">
             No sales today
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order Time</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Total Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sales.map((sale) => (
-                <TableRow key={sale.id}>
-                  <TableCell>
-                    {new Date(sale.timestamp).toLocaleTimeString()}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {Array.isArray(sale.items) ? 
-                        sale.items.map((item: any, idx: number) => (
-                          <div key={idx}>{item.name} × {item.quantity}</div>
-                        ))
-                        : "No items"
-                      }
-                    </div>
-                  </TableCell>
-                  <TableCell>{sale.payment_type}</TableCell>
-                  <TableCell className="font-semibold text-primary">
-                    ₹{Number(sale.total).toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ScrollArea className="h-[400px] sm:h-[500px]">
+            <div className="px-4 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs sm:text-sm">Time</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Items</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Payment</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.map((sale) => (
+                    <TableRow key={sale.id}>
+                      <TableCell className="text-xs sm:text-sm">
+                        {new Date(sale.timestamp).toLocaleTimeString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs sm:text-sm">
+                          {Array.isArray(sale.items) ? 
+                            sale.items.map((item: any, idx: number) => (
+                              <div key={idx}>{item.name} × {item.quantity}</div>
+                            ))
+                            : "No items"
+                          }
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm">{sale.payment_type}</TableCell>
+                      <TableCell className="font-semibold text-primary text-xs sm:text-sm">
+                        ₹{Number(sale.total).toFixed(0)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>

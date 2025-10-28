@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -245,106 +246,116 @@ const KioskSales = ({ kioskId, onOrderComplete }: KioskSalesProps) => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
       <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Available Items</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg sm:text-xl">Available Items</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item Name</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.item_name}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
-                  <TableCell>{getStatusBadge(item)}</TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      onClick={() => addToOrder(item)}
-                      disabled={item.stock === 0 || (typeof item.id === 'string' && item.id.startsWith('placeholder-'))}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="p-0 sm:p-6">
+          <ScrollArea className="h-[400px] sm:h-[500px]">
+            <div className="px-4 sm:px-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs sm:text-sm">Item</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Stock</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Price</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-xs sm:text-sm">{item.item_name}</TableCell>
+                      <TableCell className="text-xs sm:text-sm">{item.stock}</TableCell>
+                      <TableCell className="text-xs sm:text-sm">₹{Number(item.price).toFixed(0)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{getStatusBadge(item)}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          onClick={() => addToOrder(item)}
+                          disabled={item.stock === 0 || (typeof item.id === 'string' && item.id.startsWith('placeholder-'))}
+                          className="text-xs h-7 sm:h-8"
+                        >
+                          <Plus className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Add</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
+      <Card className="lg:sticky lg:top-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             Current Order
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4">
           {currentOrder.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
+            <div className="text-center text-muted-foreground py-6 sm:py-8 text-sm sm:text-base">
               No items in order
             </div>
           ) : (
             <>
-              <div className="space-y-3">
-                {currentOrder.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium">{item.item_name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        ₹{Number(item.price).toFixed(2)} × {item.quantity}
+              <ScrollArea className="h-[250px] sm:h-[300px]">
+                <div className="space-y-2 sm:space-y-3 pr-4">
+                  {currentOrder.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center p-2 sm:p-3 bg-secondary rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-xs sm:text-sm truncate">{item.item_name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          ₹{Number(item.price).toFixed(0)} × {item.quantity}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeFromOrder(item.id)}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="font-bold text-xs sm:text-sm min-w-[50px] text-right">
+                          ₹{(Number(item.price) * item.quantity).toFixed(0)}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeFromOrder(item.id)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="font-bold">₹{(Number(item.price) * item.quantity).toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScrollArea>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-lg font-bold">Total:</span>
-                  <span className="text-2xl font-bold text-primary">
-                    ₹{getTotalPrice().toFixed(2)}
+              <div className="border-t pt-3 sm:pt-4 space-y-3 sm:space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-base sm:text-lg font-bold">Total:</span>
+                  <span className="text-xl sm:text-2xl font-bold text-primary">
+                    ₹{getTotalPrice().toFixed(0)}
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <Label>Payment Type</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm sm:text-base">Payment Type</Label>
                   <RadioGroup value={paymentType} onValueChange={(value) => setPaymentType(value as "Cash" | "UPI")}>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="Cash" id="cash" />
-                      <Label htmlFor="cash" className="cursor-pointer">Cash</Label>
+                      <Label htmlFor="cash" className="cursor-pointer text-sm sm:text-base">Cash</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="UPI" id="upi" />
-                      <Label htmlFor="upi" className="cursor-pointer">UPI</Label>
+                      <Label htmlFor="upi" className="cursor-pointer text-sm sm:text-base">UPI</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
-                <Button onClick={handlePlaceOrder} className="w-full">
+                <Button onClick={handlePlaceOrder} className="w-full text-sm sm:text-base h-9 sm:h-10">
                   Place Order
                 </Button>
               </div>

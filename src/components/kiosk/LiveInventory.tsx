@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Package } from "lucide-react";
 
@@ -124,33 +125,37 @@ const LiveInventory = ({ kioskId }: LiveInventoryProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+          <Package className="h-4 w-4 sm:h-5 sm:w-5" />
           Live Inventory
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Item Name</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {inventory.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.item_name}</TableCell>
-                <TableCell>{item.stock}</TableCell>
-                <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
-                <TableCell>{getStatusBadge(item)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <CardContent className="p-0 sm:p-6">
+        <ScrollArea className="h-[400px] sm:h-[500px]">
+          <div className="px-4 sm:px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs sm:text-sm">Item Name</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Quantity</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Price</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventory.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium text-xs sm:text-sm">{item.item_name}</TableCell>
+                    <TableCell className="text-xs sm:text-sm">{item.stock}</TableCell>
+                    <TableCell className="text-xs sm:text-sm">₹{Number(item.price).toFixed(0)}</TableCell>
+                    <TableCell>{getStatusBadge(item)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

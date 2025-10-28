@@ -186,56 +186,56 @@ const KioskDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">{kioskName} Dashboard</h1>
-            <p className="text-muted-foreground">{currentDate}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{kioskName} Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{currentDate}</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">Sign Out</Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card className="border-primary/20 hover:border-primary/40 transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">₹{stats.totalRevenue.toFixed(2)}</div>
+              <div className="text-xl sm:text-2xl font-bold text-primary">₹{stats.totalRevenue.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">Today's earnings</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Orders Completed</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.ordersCompleted}</div>
+              <div className="text-xl sm:text-2xl font-bold">{stats.ordersCompleted}</div>
               <p className="text-xs text-muted-foreground">Today</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
               <PackageX className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.lowStockItems}</div>
+              <div className="text-xl sm:text-2xl font-bold">{stats.lowStockItems}</div>
               <p className="text-xs text-muted-foreground">Below 10 units</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium">Clock In/Out</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-medium">
+              <div className="text-xs sm:text-sm font-medium">
                 {stats.clockIn && <div>In: {new Date(stats.clockIn).toLocaleTimeString()}</div>}
                 {stats.clockOut && <div>Out: {new Date(stats.clockOut).toLocaleTimeString()}</div>}
                 {!stats.clockIn && !stats.clockOut && <div className="text-muted-foreground">Not clocked in</div>}
@@ -245,12 +245,12 @@ const KioskDashboard = () => {
         </div>
 
         <Tabs defaultValue="sales" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="sales">Sales</TabsTrigger>
-            <TabsTrigger value="clock">Clock In/Out</TabsTrigger>
-            <TabsTrigger value="inventory">Live Inventory</TabsTrigger>
-            <TabsTrigger value="purchase">Purchase Orders</TabsTrigger>
-            <TabsTrigger value="recent">Recent Sales</TabsTrigger>
+          <TabsList className="w-full flex flex-nowrap overflow-x-auto overflow-y-hidden justify-start sm:grid sm:grid-cols-5 h-auto">
+            <TabsTrigger value="sales" className="flex-shrink-0 text-xs sm:text-sm">Sales</TabsTrigger>
+            <TabsTrigger value="clock" className="flex-shrink-0 text-xs sm:text-sm">Clock</TabsTrigger>
+            <TabsTrigger value="inventory" className="flex-shrink-0 text-xs sm:text-sm">Inventory</TabsTrigger>
+            <TabsTrigger value="purchase" className="flex-shrink-0 text-xs sm:text-sm">Orders</TabsTrigger>
+            <TabsTrigger value="recent" className="flex-shrink-0 text-xs sm:text-sm">Recent</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sales">
