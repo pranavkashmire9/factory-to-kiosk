@@ -14,10 +14,12 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const [capturing, setCapturing] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [clockType, setClockType] = useState<"in" | "out" | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const startCamera = async () => {
+  const startCamera = async (type: "in" | "out") => {
+    setClockType(type);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
@@ -56,9 +58,11 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
     }
     setCapturing(false);
     setVideoReady(false);
+    setClockType(null);
   };
 
-  const captureAndClock = async (type: "in" | "out") => {
+  const captureAndClock = async () => {
+    if (!clockType) return;
     if (!videoRef.current || !canvasRef.current) {
       toast.error("Camera not ready");
       return;
@@ -85,8 +89,10 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       }
 
       try {
+        const captureTimestamp = new Date().toISOString();
+        
         // Upload to Supabase Storage
-        const fileName = `${kioskId}_${type}_${Date.now()}.jpg`;
+        const fileName = `${kioskId}_${clockType}_${Date.now()}.jpg`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("clockin-photos")
           .upload(fileName, blob, {
@@ -100,19 +106,20 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
           .from("clockin-photos")
           .getPublicUrl(fileName);
 
-        // Save clock log
+        // Save clock log with explicit timestamp
         const { error: logError } = await supabase
           .from("clock_logs")
           .insert({
             kiosk_id: kioskId,
             image_url: publicUrl,
-            type,
+            type: clockType,
+            timestamp: captureTimestamp,
           });
 
         if (logError) throw logError;
 
-        console.log(`Clock ${type} saved successfully for kiosk:`, kioskId);
-        toast.success(`Clocked ${type} successfully!`);
+        console.log(`Clock ${clockType} saved at ${captureTimestamp} for kiosk:`, kioskId);
+        toast.success(`Clocked ${clockType} successfully!`);
         stopCamera();
         onClockAction();
       } catch (error) {
@@ -137,9 +144,13 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
 
         {!capturing ? (
           <div className="flex gap-4">
-            <Button onClick={startCamera} className="flex-1">
-              <Camera className="h-4 w-4 mr-2" />
-              Start Camera
+            <Button onClick={() => startCamera("in")} className="flex-1">
+              <Clock className="h-4 w-4 mr-2" />
+              Clock In
+            </Button>
+            <Button onClick={() => startCamera("out")} variant="secondary" className="flex-1">
+              <Clock className="h-4 w-4 mr-2" />
+              Clock Out
             </Button>
           </div>
         ) : (
@@ -154,29 +165,25 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
             </div>
             <canvas ref={canvasRef} className="hidden" />
             
-            {!videoReady && (
+            {!videoReady ? (
               <div className="text-sm text-muted-foreground text-center">
                 Preparing camera...
               </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center">
+                Ready to capture for Clock {clockType?.toUpperCase()}
+              </div>
             )}
             
-            <div className="flex gap-4">
-              <Button 
-                onClick={() => captureAndClock("in")} 
-                className="flex-1"
-                disabled={!videoReady}
-              >
-                Clock In
-              </Button>
-              <Button 
-                onClick={() => captureAndClock("out")} 
-                variant="secondary" 
-                className="flex-1"
-                disabled={!videoReady}
-              >
-                Clock Out
-              </Button>
-            </div>
+            <Button 
+              onClick={captureAndClock} 
+              className="w-full"
+              disabled={!videoReady}
+              size="lg"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              Capture & Submit
+            </Button>
             
             <Button onClick={stopCamera} variant="outline" className="w-full">
               Cancel
