@@ -92,18 +92,18 @@ const ManagerDashboard = () => {
         console.error("Error counting orders:", ordersCountError);
       }
 
-      // Total Stocks
-      const { data: inventory, error: inventoryError } = await supabase
-        .from("factory_inventory")
+      // Total Stocks across all kiosks
+      const { data: kioskInventory, error: kioskInventoryError } = await supabase
+        .from("kiosk_inventory")
         .select("stock");
       
-      if (inventoryError) {
-        console.error("Error fetching inventory:", inventoryError);
-        throw inventoryError;
+      if (kioskInventoryError) {
+        console.error("Error fetching kiosk inventory:", kioskInventoryError);
+        throw kioskInventoryError;
       }
       
-      const totalStocks = inventory?.reduce((sum, item) => sum + item.stock, 0) || 0;
-      console.log("Total stocks:", totalStocks);
+      const totalStocks = kioskInventory?.reduce((sum, item) => sum + item.stock, 0) || 0;
+      console.log("Total stocks across kiosks:", totalStocks);
 
       // Pending Production
       const { count: pendingProduction, error: pendingError } = await supabase
@@ -153,7 +153,7 @@ const ManagerDashboard = () => {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'factory_inventory' },
+        { event: '*', schema: 'public', table: 'kiosk_inventory' },
         () => fetchStats()
       )
       .on(
@@ -230,7 +230,7 @@ const ManagerDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalStocks}</div>
-              <p className="text-xs text-muted-foreground">Factory inventory</p>
+              <p className="text-xs text-muted-foreground">Across all kiosks</p>
             </CardContent>
           </Card>
 
