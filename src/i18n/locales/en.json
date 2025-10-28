@@ -32,6 +32,14 @@
     "allKiosks": "All kiosks",
     "acrossAllKiosks": "Across all kiosks",
     "inPreparingState": "In preparing state",
-    "deliveredOrders": "Delivered orders"
+    "deliveredOrders": "Delivered orders",
+    "pastAnalytics": "See Past Analytics",
+    "pastAnalyticsTitle": "Past Analytics",
+    "selectDate": "Select Date",
+    "pickDate": "Pick a date",
+    "noDataForDate": "No data available for this date",
+    "kioskName": "Kiosk Name",
+    "clockInTime": "Clock In Time",
+    "clockOutTime": "Clock Out Time"
   }
 }

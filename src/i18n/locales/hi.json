@@ -32,6 +32,14 @@
     "allKiosks": "सभी कियोस्क",
     "acrossAllKiosks": "सभी कियोस्क में",
     "inPreparingState": "तैयारी में",
-    "deliveredOrders": "वितरित ऑर्डर"
+    "deliveredOrders": "वितरित ऑर्डर",
+    "pastAnalytics": "पिछली रिपोर्ट देखें",
+    "pastAnalyticsTitle": "पिछली रिपोर्ट",
+    "selectDate": "तारीख चुनें",
+    "pickDate": "एक तारीख चुनें",
+    "noDataForDate": "इस तारीख के लिए कोई डेटा उपलब्ध नहीं है",
+    "kioskName": "कियोस्क नाम",
+    "clockInTime": "क्लॉक इन समय",
+    "clockOutTime": "क्लॉक आउट समय"
   }
 }
