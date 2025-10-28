@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Send } from "lucide-react";
+import { Plus, Pencil, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface FactoryInventoryProps {
   onUpdate: () => void;
@@ -122,6 +123,22 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     } else {
       toast.success("Item updated successfully");
       setEditItem(null);
+      fetchInventory();
+      onUpdate();
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    const { error } = await supabase
+      .from("factory_inventory")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      toast.error("Error deleting item");
+      console.error(error);
+    } else {
+      toast.success("Item deleted successfully");
       fetchInventory();
       onUpdate();
     }
@@ -326,6 +343,28 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                         )}
                       </DialogContent>
                     </Dialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </TableCell>
               </TableRow>
