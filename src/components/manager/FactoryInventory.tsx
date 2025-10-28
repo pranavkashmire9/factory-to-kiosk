@@ -323,7 +323,9 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
         .from("kiosk_inventory")
         .update({ 
           stock: newStock,
-          status: newStock < 10 ? "Low Stock" : "In Stock"
+          status: newStock < 10 ? "Low Stock" : "In Stock",
+          image_url: sendItem.image_url,
+          price: sendItem.price
         })
         .eq("id", existingItem.id);
 
@@ -340,7 +342,8 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
           item_name: sendItem.name,
           stock: quantity,
           price: sendItem.price,
-          status: quantity < 10 ? "Low Stock" : "In Stock"
+          status: quantity < 10 ? "Low Stock" : "In Stock",
+          image_url: sendItem.image_url
         });
 
       if (error) {
