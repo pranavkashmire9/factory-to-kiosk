@@ -40,6 +40,14 @@
     "noDataForDate": "या तारखेसाठी कोणताही डेटा उपलब्ध नाही",
     "kioskName": "किओस्क नाव",
     "clockInTime": "क्लॉक इन वेळ",
-    "clockOutTime": "क्लॉक आउट वेळ"
+    "clockOutTime": "क्लॉक आउट वेळ",
+    "resetTodaysData": "आजचा डेटा रीसेट करा",
+    "resetDataConfirmTitle": "तुम्हाला पूर्णपणे खात्री आहे का?",
+    "resetDataConfirmDescription": "ही क्रिया पूर्ववत केली जाऊ शकत नाही. हे डेटाबेसमधून आजची सर्व विक्री, घड्याळ लॉग आणि अहवाल कायमचे हटवेल.",
+    "cancel": "रद्द करा",
+    "resetData": "डेटा रीसेट करा",
+    "resetting": "रीसेट करत आहे...",
+    "todaysDataReset": "आजचा डेटा यशस्वीरित्या रीसेट झाला आहे",
+    "resetDataError": "आजचा डेटा रीसेट करण्यात अयशस्वी"
   }
 }

@@ -40,6 +40,14 @@
     "noDataForDate": "No data available for this date",
     "kioskName": "Kiosk Name",
     "clockInTime": "Clock In Time",
-    "clockOutTime": "Clock Out Time"
+    "clockOutTime": "Clock Out Time",
+    "resetTodaysData": "Reset Today's Data",
+    "resetDataConfirmTitle": "Are you absolutely sure?",
+    "resetDataConfirmDescription": "This action cannot be undone. This will permanently delete all of today's sales, clock logs, and reports from the database.",
+    "cancel": "Cancel",
+    "resetData": "Reset Data",
+    "resetting": "Resetting...",
+    "todaysDataReset": "Today's data has been reset successfully",
+    "resetDataError": "Failed to reset today's data"
   }
 }
