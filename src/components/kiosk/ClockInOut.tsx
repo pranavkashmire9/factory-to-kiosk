@@ -28,14 +28,24 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Wait for video to be ready
-        videoRef.current.onloadeddata = () => {
-          setVideoReady(true);
+        
+        // Wait for video metadata to load
+        videoRef.current.onloadedmetadata = async () => {
+          if (videoRef.current) {
+            try {
+              await videoRef.current.play();
+              console.log("Video playing, ready to capture");
+              setVideoReady(true);
+            } catch (playError) {
+              console.error("Error playing video:", playError);
+              toast.error("Could not start video playback");
+            }
+          }
         };
       }
     } catch (error) {
       toast.error("Could not access camera");
-      console.error(error);
+      console.error("Camera error:", error);
     }
   };
 
