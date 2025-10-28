@@ -81,7 +81,6 @@ const KioskDashboard = () => {
 
   const fetchStats = async (userId: string) => {
     try {
-      console.log("Starting to fetch kiosk stats for user:", userId);
       const today = new Date().toISOString().split('T')[0];
 
       // Total Revenue (today)
@@ -91,13 +90,9 @@ const KioskDashboard = () => {
         .eq("kiosk_id", userId)
         .eq("date", today);
       
-      if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
-        throw ordersError;
-      }
+      if (ordersError) throw ordersError;
       
       const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
-      console.log("Total revenue:", totalRevenue);
 
       // Orders Completed (today)
       const ordersCompleted = orders?.length || 0;
@@ -110,7 +105,7 @@ const KioskDashboard = () => {
         .lt("stock", 10);
 
       if (lowStockError) {
-        console.error("Error fetching low stock:", lowStockError);
+        toast.error("Error fetching low stock items");
       }
 
       // Clock times (today)
@@ -122,16 +117,12 @@ const KioskDashboard = () => {
         .order("timestamp", { ascending: false });
 
       if (clockError) {
-        console.error("Error fetching clock logs:", clockError);
+        toast.error("Error fetching clock logs");
       }
-
-      console.log("Clock logs fetched:", clockLogs);
 
       // Get the most recent clock in and clock out for today
       const clockIn = clockLogs?.find(log => log.type === "in")?.timestamp || null;
       const clockOut = clockLogs?.find(log => log.type === "out")?.timestamp || null;
-
-      console.log("Clock In:", clockIn, "Clock Out:", clockOut);
 
       setStats({
         totalRevenue,
@@ -140,13 +131,9 @@ const KioskDashboard = () => {
         clockIn,
         clockOut,
       });
-
-      console.log("Kiosk stats fetched successfully");
     } catch (error: any) {
-      console.error("Error fetching stats:", error);
-      toast.error("Error loading dashboard data: " + (error.message || "Unknown error"));
+      toast.error("Error loading dashboard data");
     } finally {
-      console.log("Setting loading to false");
       setLoading(false);
     }
   };

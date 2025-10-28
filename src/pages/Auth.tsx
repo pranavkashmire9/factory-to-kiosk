@@ -8,6 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const signUpSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password must be less than 72 characters"),
+  role: z.enum(["manager", "kiosk"]),
+  kioskName: z.string().trim().max(100, "Kiosk name must be less than 100 characters").optional(),
+});
+
+const signInSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,6 +37,22 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate inputs
+      const validation = signUpSchema.safeParse({
+        name,
+        email,
+        password,
+        role,
+        kioskName: role === "kiosk" ? kioskName : undefined,
+      });
+
+      if (!validation.success) {
+        const errors = validation.error.issues.map(err => err.message).join(", ");
+        toast.error(errors);
+        setLoading(false);
+        return;
+      }
+
       // Check if trying to register as manager
       if (role === "manager") {
         const { data: existingManager } = await supabase
@@ -88,6 +118,16 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate inputs
+      const validation = signInSchema.safeParse({ email, password });
+
+      if (!validation.success) {
+        const errors = validation.error.issues.map(err => err.message).join(", ");
+        toast.error(errors);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,

@@ -66,7 +66,6 @@ const ManagerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      console.log("Starting to fetch stats...");
       const today = new Date().toISOString().split('T')[0];
 
       // Total Revenue (today)
@@ -75,13 +74,9 @@ const ManagerDashboard = () => {
         .select("total")
         .eq("date", today);
       
-      if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
-        throw ordersError;
-      }
+      if (ordersError) throw ordersError;
       
       const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
-      console.log("Total revenue:", totalRevenue);
 
       // Total Orders
       const { count: totalOrders, error: ordersCountError } = await supabase
@@ -89,7 +84,7 @@ const ManagerDashboard = () => {
         .select("*", { count: 'exact', head: true });
 
       if (ordersCountError) {
-        console.error("Error counting orders:", ordersCountError);
+        toast.error("Error fetching orders count");
       }
 
       // Total Stocks across all kiosks
@@ -97,13 +92,9 @@ const ManagerDashboard = () => {
         .from("kiosk_inventory")
         .select("stock");
       
-      if (kioskInventoryError) {
-        console.error("Error fetching kiosk inventory:", kioskInventoryError);
-        throw kioskInventoryError;
-      }
+      if (kioskInventoryError) throw kioskInventoryError;
       
       const totalStocks = kioskInventory?.reduce((sum, item) => sum + item.stock, 0) || 0;
-      console.log("Total stocks across kiosks:", totalStocks);
 
       // Pending Production
       const { count: pendingProduction, error: pendingError } = await supabase
@@ -112,7 +103,7 @@ const ManagerDashboard = () => {
         .eq("status", "Preparing");
 
       if (pendingError) {
-        console.error("Error fetching pending production:", pendingError);
+        toast.error("Error fetching pending production");
       }
 
       // Total Dispatched
@@ -122,7 +113,7 @@ const ManagerDashboard = () => {
         .eq("status", "Delivered");
 
       if (dispatchedError) {
-        console.error("Error fetching dispatched:", dispatchedError);
+        toast.error("Error fetching dispatched orders");
       }
 
       setStats({
@@ -132,13 +123,9 @@ const ManagerDashboard = () => {
         pendingProduction: pendingProduction || 0,
         totalDispatched: totalDispatched || 0,
       });
-
-      console.log("Stats fetched successfully");
     } catch (error: any) {
-      console.error("Error fetching stats:", error);
-      toast.error("Error loading dashboard data: " + (error.message || "Unknown error"));
+      toast.error("Error loading dashboard data");
     } finally {
-      console.log("Setting loading to false");
       setLoading(false);
     }
   };
