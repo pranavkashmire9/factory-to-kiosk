@@ -30,59 +30,94 @@ const KioskDashboard = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("Error getting user:", userError);
+        navigate("/auth");
+        return;
+      }
+
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, kiosk_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        toast.error("Error loading profile");
+        setLoading(false);
+        return;
+      }
+
+      if (profile?.role !== "kiosk") {
+        navigate("/manager-dashboard");
+        return;
+      }
+
+      setKioskId(user.id);
+      setKioskName(profile.kiosk_name || "Kiosk");
+      fetchStats(user.id);
+      setupRealtimeSubscription(user.id);
+    } catch (error) {
+      console.error("Auth check error:", error);
+      toast.error("Authentication error");
+      setLoading(false);
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, kiosk_name")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "kiosk") {
-      navigate("/manager-dashboard");
-      return;
-    }
-
-    setKioskId(user.id);
-    setKioskName(profile.kiosk_name || "Kiosk");
-    fetchStats(user.id);
-    setupRealtimeSubscription(user.id);
   };
 
   const fetchStats = async (userId: string) => {
     try {
+      console.log("Starting to fetch kiosk stats for user:", userId);
       const today = new Date().toISOString().split('T')[0];
 
       // Total Revenue (today)
-      const { data: orders } = await supabase
+      const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("total")
         .eq("kiosk_id", userId)
         .eq("date", today);
       
+      if (ordersError) {
+        console.error("Error fetching orders:", ordersError);
+        throw ordersError;
+      }
+      
       const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      console.log("Total revenue:", totalRevenue);
 
       // Orders Completed (today)
       const ordersCompleted = orders?.length || 0;
 
       // Low Stock Items (< 10)
-      const { count: lowStockItems } = await supabase
+      const { count: lowStockItems, error: lowStockError } = await supabase
         .from("kiosk_inventory")
         .select("*", { count: 'exact', head: true })
         .eq("kiosk_id", userId)
         .lt("stock", 10);
 
+      if (lowStockError) {
+        console.error("Error fetching low stock:", lowStockError);
+      }
+
       // Clock times (today)
-      const { data: clockLogs } = await supabase
+      const { data: clockLogs, error: clockError } = await supabase
         .from("clock_logs")
         .select("type, timestamp")
         .eq("kiosk_id", userId)
         .gte("timestamp", `${today}T00:00:00`)
         .order("timestamp", { ascending: true });
+
+      if (clockError) {
+        console.error("Error fetching clock logs:", clockError);
+      }
 
       const clockIn = clockLogs?.find(log => log.type === "in")?.timestamp || null;
       const clockOut = clockLogs?.find(log => log.type === "out")?.timestamp || null;
@@ -94,9 +129,13 @@ const KioskDashboard = () => {
         clockIn,
         clockOut,
       });
-    } catch (error) {
+
+      console.log("Kiosk stats fetched successfully");
+    } catch (error: any) {
       console.error("Error fetching stats:", error);
+      toast.error("Error loading dashboard data: " + (error.message || "Unknown error"));
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };

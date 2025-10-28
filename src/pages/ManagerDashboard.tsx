@@ -27,58 +27,103 @@ const ManagerDashboard = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("Error getting user:", userError);
+        navigate("/auth");
+        return;
+      }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
 
-    if (profile?.role !== "manager") {
-      navigate("/kiosk-dashboard");
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        toast.error("Error loading profile");
+        setLoading(false);
+        return;
+      }
+
+      if (profile?.role !== "manager") {
+        navigate("/kiosk-dashboard");
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      toast.error("Authentication error");
+      setLoading(false);
     }
   };
 
   const fetchStats = async () => {
     try {
+      console.log("Starting to fetch stats...");
       const today = new Date().toISOString().split('T')[0];
 
       // Total Revenue (today)
-      const { data: orders } = await supabase
+      const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("total")
         .eq("date", today);
       
+      if (ordersError) {
+        console.error("Error fetching orders:", ordersError);
+        throw ordersError;
+      }
+      
       const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      console.log("Total revenue:", totalRevenue);
 
       // Total Orders
-      const { count: totalOrders } = await supabase
+      const { count: totalOrders, error: ordersCountError } = await supabase
         .from("orders")
         .select("*", { count: 'exact', head: true });
 
+      if (ordersCountError) {
+        console.error("Error counting orders:", ordersCountError);
+      }
+
       // Total Stocks
-      const { data: inventory } = await supabase
+      const { data: inventory, error: inventoryError } = await supabase
         .from("factory_inventory")
         .select("stock");
       
+      if (inventoryError) {
+        console.error("Error fetching inventory:", inventoryError);
+        throw inventoryError;
+      }
+      
       const totalStocks = inventory?.reduce((sum, item) => sum + item.stock, 0) || 0;
+      console.log("Total stocks:", totalStocks);
 
       // Pending Production
-      const { count: pendingProduction } = await supabase
+      const { count: pendingProduction, error: pendingError } = await supabase
         .from("purchase_orders")
         .select("*", { count: 'exact', head: true })
         .eq("status", "Preparing");
 
+      if (pendingError) {
+        console.error("Error fetching pending production:", pendingError);
+      }
+
       // Total Dispatched
-      const { count: totalDispatched } = await supabase
+      const { count: totalDispatched, error: dispatchedError } = await supabase
         .from("purchase_orders")
         .select("*", { count: 'exact', head: true })
         .eq("status", "Delivered");
+
+      if (dispatchedError) {
+        console.error("Error fetching dispatched:", dispatchedError);
+      }
 
       setStats({
         totalRevenue,
@@ -87,9 +132,13 @@ const ManagerDashboard = () => {
         pendingProduction: pendingProduction || 0,
         totalDispatched: totalDispatched || 0,
       });
-    } catch (error) {
+
+      console.log("Stats fetched successfully");
+    } catch (error: any) {
       console.error("Error fetching stats:", error);
+      toast.error("Error loading dashboard data: " + (error.message || "Unknown error"));
     } finally {
+      console.log("Setting loading to false");
       setLoading(false);
     }
   };
