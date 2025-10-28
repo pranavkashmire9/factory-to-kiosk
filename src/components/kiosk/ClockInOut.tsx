@@ -62,7 +62,11 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   };
 
   const captureAndClock = async () => {
-    if (!clockType) return;
+    if (!clockType) {
+      toast.error("Please select clock in or out");
+      return;
+    }
+    
     if (!videoRef.current || !canvasRef.current) {
       toast.error("Camera not ready");
       return;
@@ -70,9 +74,20 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    
+    // Verify video has dimensions
+    if (!video.videoWidth || !video.videoHeight) {
+      toast.error("Video not loaded properly. Please try again.");
+      return;
+    }
+    
     const context = canvas.getContext("2d");
+    if (!context) {
+      toast.error("Unable to process image");
+      return;
+    }
 
-    if (!context) return;
+    console.log("Capturing image with dimensions:", video.videoWidth, "x", video.videoHeight);
 
     // Set canvas size to video size
     canvas.width = video.videoWidth;
