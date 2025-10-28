@@ -100,46 +100,74 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
     canvas.toBlob(async (blob) => {
       if (!blob) {
         toast.error("Failed to capture image");
+        console.error("Failed to create blob from canvas");
         return;
       }
 
+      console.log("Image captured successfully, blob size:", blob.size);
+
       try {
         const captureTimestamp = new Date().toISOString();
+        console.log(`Starting clock ${clockType} process at ${captureTimestamp}`);
         
         // Upload to Supabase Storage
         const fileName = `${kioskId}_${clockType}_${Date.now()}.jpg`;
+        console.log("Uploading to storage:", fileName);
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("clockin-photos")
           .upload(fileName, blob, {
             contentType: "image/jpeg",
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Storage upload error:", uploadError);
+          throw uploadError;
+        }
+
+        console.log("Upload successful:", uploadData);
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from("clockin-photos")
           .getPublicUrl(fileName);
 
+        console.log("Public URL:", publicUrl);
+
         // Save clock log with explicit timestamp
-        const { error: logError } = await supabase
+        console.log("Inserting clock log:", {
+          kiosk_id: kioskId,
+          type: clockType,
+          timestamp: captureTimestamp,
+        });
+
+        const { data: insertData, error: logError } = await supabase
           .from("clock_logs")
           .insert({
             kiosk_id: kioskId,
             image_url: publicUrl,
             type: clockType,
             timestamp: captureTimestamp,
-          });
+          })
+          .select();
 
-        if (logError) throw logError;
+        if (logError) {
+          console.error("Clock log insert error:", logError);
+          throw logError;
+        }
 
-        console.log(`Clock ${clockType} saved at ${captureTimestamp} for kiosk:`, kioskId);
-        toast.success(`Clocked ${clockType} successfully!`);
+        console.log("Clock log saved successfully:", insertData);
+        console.log(`✅ Clock ${clockType} completed at ${captureTimestamp}`);
+        
+        toast.success(`Clocked ${clockType} at ${new Date(captureTimestamp).toLocaleTimeString()}!`);
         stopCamera();
+        
+        // Trigger dashboard refresh
+        console.log("Triggering dashboard refresh...");
         onClockAction();
       } catch (error) {
-        toast.error("Error saving clock data");
-        console.error("Clock in/out error:", error);
+        console.error("❌ Clock in/out error:", error);
+        toast.error(`Error saving clock ${clockType}: ${error.message || 'Unknown error'}`);
       }
     }, "image/jpeg", 0.95);
   };
