@@ -26,7 +26,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   
   const [newItem, setNewItem] = useState({
     name: "",
-    stock: "",
     price: "",
   });
 
@@ -76,23 +75,20 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   };
 
   const handleAddItem = async () => {
-    const stock = parseInt(newItem.stock);
     const price = parseFloat(newItem.price);
 
-    if (!newItem.name || isNaN(stock) || isNaN(price)) {
+    if (!newItem.name || isNaN(price)) {
       toast.error("Please fill all fields correctly");
       return;
     }
-
-    const status = stock < 10 ? "Low Stock" : "In Stock";
 
     const { error } = await supabase
       .from("factory_inventory")
       .insert({
         name: newItem.name,
-        stock,
+        stock: 999999,
         price,
-        status,
+        status: "In Stock",
       });
 
     if (error) {
@@ -100,7 +96,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       console.error(error);
     } else {
       toast.success("Item added successfully");
-      setNewItem({ name: "", stock: "", price: "" });
+      setNewItem({ name: "", price: "" });
       fetchInventory();
       onUpdate();
     }
@@ -109,17 +105,14 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   const handleUpdateItem = async () => {
     if (!editItem) return;
 
-    const stock = parseInt(editItem.stock);
     const price = parseFloat(editItem.price);
-    const status = stock < 10 ? "Low Stock" : "In Stock";
 
     const { error } = await supabase
       .from("factory_inventory")
       .update({
         name: editItem.name,
-        stock,
         price,
-        status,
+        status: "In Stock",
       })
       .eq("id", editItem.id);
 
@@ -141,24 +134,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     }
 
     const quantity = parseInt(sendQuantity);
-    if (quantity > sendItem.stock) {
-      toast.error("Insufficient stock");
-      return;
-    }
-
-    // Reduce factory stock
-    const { error: factoryError } = await supabase
-      .from("factory_inventory")
-      .update({ 
-        stock: sendItem.stock - quantity,
-        status: (sendItem.stock - quantity) < 10 ? "Low Stock" : "In Stock"
-      })
-      .eq("id", sendItem.id);
-
-    if (factoryError) {
-      toast.error("Error updating factory inventory");
-      return;
-    }
 
     // Check if item exists in kiosk inventory
     const { data: existingItem } = await supabase
@@ -237,14 +212,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                   />
                 </div>
                 <div>
-                  <Label>Stock (units)</Label>
-                  <Input
-                    type="number"
-                    value={newItem.stock}
-                    onChange={(e) => setNewItem({ ...newItem, stock: e.target.value })}
-                  />
-                </div>
-                <div>
                   <Label>Price (₹)</Label>
                   <Input
                     type="number"
@@ -274,12 +241,10 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
             {inventory.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>{item.stock}</TableCell>
+                <TableCell>∞</TableCell>
                 <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
                 <TableCell>
-                  <Badge variant={item.status === "Low Stock" ? "destructive" : "default"}>
-                    {item.status}
-                  </Badge>
+                  <Badge variant="default">In Stock</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -300,14 +265,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                               <Input
                                 value={editItem.name}
                                 onChange={(e) => setEditItem({ ...editItem, name: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label>Stock</Label>
-                              <Input
-                                type="number"
-                                value={editItem.stock}
-                                onChange={(e) => setEditItem({ ...editItem, stock: e.target.value })}
                               />
                             </div>
                             <div>
@@ -339,7 +296,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                           <div className="space-y-4">
                             <div>
                               <Label>Item: {sendItem.name}</Label>
-                              <p className="text-sm text-muted-foreground">Available: {sendItem.stock} units</p>
+                              <p className="text-sm text-muted-foreground">Factory stock: Infinite</p>
                             </div>
                             <div>
                               <Label>Select Kiosk</Label>
@@ -362,7 +319,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                                 type="number"
                                 value={sendQuantity}
                                 onChange={(e) => setSendQuantity(e.target.value)}
-                                max={sendItem.stock}
                               />
                             </div>
                             <Button onClick={handleSendItem} className="w-full">Send to Kiosk</Button>
