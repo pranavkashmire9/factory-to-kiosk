@@ -32,6 +32,8 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     name: "",
     price: "",
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchInventory();
@@ -135,10 +137,50 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!editItem) return null;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${editItem.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload image to storage
+      const { error: uploadError } = await supabase.storage
+        .from('item-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('item-images')
+        .getPublicUrl(filePath);
+
+      setUploadingImage(false);
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+      setUploadingImage(false);
+      return null;
+    }
+  };
+
   const handleUpdateItem = async () => {
     if (!editItem) return;
 
     const price = parseFloat(editItem.price);
+    let imageUrl = editItem.image_url;
+
+    // Upload new image if selected
+    if (imageFile) {
+      const uploadedUrl = await handleImageUpload(imageFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      }
+    }
 
     const { error } = await supabase
       .from("factory_inventory")
@@ -146,6 +188,7 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
         name: editItem.name,
         price,
         status: "In Stock",
+        image_url: imageUrl,
       })
       .eq("id", editItem.id);
 
@@ -153,8 +196,15 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       toast.error("Error updating item");
       console.error(error);
     } else {
+      // Update kiosk inventories with the new image
+      await supabase
+        .from("kiosk_inventory")
+        .update({ image_url: imageUrl })
+        .eq("item_name", editItem.name);
+
       toast.success("Item updated successfully");
       setEditItem(null);
+      setImageFile(null);
       fetchInventory();
       onUpdate();
     }
@@ -376,11 +426,14 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                   <div className="flex gap-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => setEditItem(item)}>
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setEditItem(item);
+                          setImageFile(null);
+                        }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent onCloseAutoFocus={() => setImageFile(null)}>
                         <DialogHeader>
                           <DialogTitle>Edit Item</DialogTitle>
                         </DialogHeader>
@@ -402,7 +455,45 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                                 onChange={(e) => setEditItem({ ...editItem, price: e.target.value })}
                               />
                             </div>
-                            <Button onClick={handleUpdateItem} className="w-full">Update Item</Button>
+                            <div>
+                              <Label>Item Image</Label>
+                              {editItem.image_url && !imageFile && (
+                                <div className="mb-2">
+                                  <img 
+                                    src={editItem.image_url} 
+                                    alt={editItem.name}
+                                    className="h-24 w-24 rounded object-cover"
+                                  />
+                                </div>
+                              )}
+                              {imageFile && (
+                                <div className="mb-2">
+                                  <img 
+                                    src={URL.createObjectURL(imageFile)} 
+                                    alt="Preview"
+                                    className="h-24 w-24 rounded object-cover"
+                                  />
+                                </div>
+                              )}
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) setImageFile(file);
+                                }}
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Upload an image for this item
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={handleUpdateItem} 
+                              className="w-full"
+                              disabled={uploadingImage}
+                            >
+                              {uploadingImage ? "Uploading..." : "Update Item"}
+                            </Button>
                           </div>
                         )}
                       </DialogContent>
