@@ -177,17 +177,31 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
   };
 
   const fetchBreakdownData = async (itemName: string) => {
+    // First get all valid kiosk profiles
+    const { data: kioskProfiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, kiosk_name")
+      .eq("role", "kiosk")
+      .not("kiosk_name", "is", null);
+
+    if (profileError) {
+      toast.error("Error fetching kiosk profiles");
+      console.error(profileError);
+      return [];
+    }
+
+    if (!kioskProfiles || kioskProfiles.length === 0) {
+      return [];
+    }
+
+    const kioskIds = kioskProfiles.map(k => k.id);
+
+    // Then get inventory for those kiosks
     const { data, error } = await supabase
       .from("kiosk_inventory")
-      .select(`
-        stock,
-        kiosk_id,
-        profiles!kiosk_inventory_kiosk_id_fkey(
-          kiosk_name,
-          role
-        )
-      `)
+      .select("stock, kiosk_id")
       .eq("item_name", itemName)
+      .in("kiosk_id", kioskIds)
       .gt("stock", 0);
 
     if (error) {
@@ -196,12 +210,16 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
       return [];
     }
 
-    // Filter to only include kiosks with valid profiles and kiosk role
-    const validData = (data || []).filter(
-      (item: any) => item.profiles && item.profiles.role === 'kiosk' && item.profiles.kiosk_name
-    );
+    // Map kiosk names to the data
+    const enrichedData = (data || []).map(item => ({
+      stock: item.stock,
+      kiosk_id: item.kiosk_id,
+      profiles: {
+        kiosk_name: kioskProfiles.find(k => k.id === item.kiosk_id)?.kiosk_name
+      }
+    }));
 
-    return validData;
+    return enrichedData;
   };
 
   const handleBreakdownClick = async (item: any) => {
