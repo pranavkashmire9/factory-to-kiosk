@@ -83,6 +83,20 @@ const PurchaseOrders = () => {
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    // Get the order details first
+    const { data: order, error: fetchError } = await supabase
+      .from("purchase_orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
+
+    if (fetchError) {
+      toast.error("Error fetching order details");
+      console.error(fetchError);
+      return;
+    }
+
+    // Update the status
     const { error } = await supabase
       .from("purchase_orders")
       .update({ status: newStatus })
@@ -91,10 +105,53 @@ const PurchaseOrders = () => {
     if (error) {
       toast.error("Error updating order status");
       console.error(error);
+      return;
+    }
+
+    // If status is "Delivered", update kiosk inventory
+    if (newStatus === "Delivered" && order?.items && Array.isArray(order.items)) {
+      for (const item of order.items as any[]) {
+        const { data: existingItem } = await supabase
+          .from("kiosk_inventory")
+          .select("*")
+          .eq("kiosk_id", order.kiosk_id)
+          .ilike("item_name", item.name)
+          .maybeSingle();
+
+        if (existingItem) {
+          // Update existing item stock
+          await supabase
+            .from("kiosk_inventory")
+            .update({ stock: existingItem.stock + item.quantity })
+            .eq("id", existingItem.id);
+        } else {
+          // Create new item in kiosk inventory
+          const { data: factoryItem } = await supabase
+            .from("factory_inventory")
+            .select("*")
+            .ilike("name", item.name)
+            .maybeSingle();
+
+          if (factoryItem) {
+            await supabase
+              .from("kiosk_inventory")
+              .insert({
+                kiosk_id: order.kiosk_id,
+                item_name: item.name,
+                stock: item.quantity,
+                price: factoryItem.price,
+                image_url: factoryItem.image_url,
+                status: "In Stock"
+              });
+          }
+        }
+      }
+      toast.success("Order marked as delivered and inventory updated");
     } else {
       toast.success("Order status updated");
-      fetchOrders();
     }
+    
+    fetchOrders();
   };
 
   const fetchFactoryInventory = async () => {
