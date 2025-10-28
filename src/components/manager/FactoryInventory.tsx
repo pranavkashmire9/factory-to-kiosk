@@ -405,7 +405,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
           <TableHeader>
             <TableRow>
               <TableHead>Sweet Name</TableHead>
-              <TableHead>Stock</TableHead>
               <TableHead>Total Stock Across Kiosks</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
@@ -427,7 +426,6 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
                     <span>{item.name}</span>
                   </div>
                 </TableCell>
-                <TableCell>∞</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <span>{kioskStockTotals[item.name] || 0}</span>
