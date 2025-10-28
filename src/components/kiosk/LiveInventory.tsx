@@ -9,6 +9,33 @@ interface LiveInventoryProps {
   kioskId: string;
 }
 
+// Predefined menu items that should always be visible
+const PREDEFINED_ITEMS = [
+  { name: "Pani Puri", price: 40 },
+  { name: "Shev Puri (J)", price: 60 },
+  { name: "Bhel Puri (J)", price: 50 },
+  { name: "Dry Masala Puri", price: 40 },
+  { name: "Ragda Pattice", price: 60 },
+  { name: "Ragda Samosa", price: 50 },
+  { name: "Samosa Chaat", price: 50 },
+  { name: "Dahi Shev Puri (J)", price: 70 },
+  { name: "Dahi Aloo Chaat", price: 50 },
+  { name: "Dahi Bhel Puri (J)", price: 70 },
+  { name: "Tokri Chaat", price: 80 },
+  { name: "Basket Chaat", price: 80 },
+  { name: "Papdi Chaat", price: 70 },
+  { name: "Cheese Bhel (J)", price: 100 },
+  { name: "Cheese Shev Puri (J)", price: 100 },
+  { name: "Dahi Wada (J)", price: 70 },
+  { name: "Veg Sandwich", price: 50 },
+  { name: "Veg Cheese Sandwich", price: 70 },
+  { name: "Veg Cheese Grill Sandwich", price: 100 },
+  { name: "Veg Grill Sandwich", price: 70 },
+  { name: "Chocolate Sandwich", price: 80 },
+  { name: "Chocolate Cheese Sandwich", price: 100 },
+  { name: "Cheese Chilly Toast", price: 90 },
+];
+
 const LiveInventory = ({ kioskId }: LiveInventoryProps) => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,9 +54,44 @@ const LiveInventory = ({ kioskId }: LiveInventoryProps) => {
 
     if (error) {
       console.error("Error fetching inventory:", error);
-    } else {
-      setInventory(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Merge predefined items with database inventory
+    const dbInventory = data || [];
+    const mergedInventory = PREDEFINED_ITEMS.map((predefinedItem) => {
+      // Check if item exists in database
+      const dbItem = dbInventory.find(
+        (item) => item.item_name.toLowerCase() === predefinedItem.name.toLowerCase()
+      );
+
+      if (dbItem) {
+        // Use database values if item exists
+        return dbItem;
+      } else {
+        // Create a placeholder item with predefined values
+        return {
+          id: `placeholder-${predefinedItem.name}`,
+          item_name: predefinedItem.name,
+          stock: 0,
+          price: predefinedItem.price,
+          status: "Out of Stock",
+          kiosk_id: kioskId,
+        };
+      }
+    });
+
+    // Also include any items from database that are not in predefined list
+    const extraItems = dbInventory.filter(
+      (dbItem) =>
+        !PREDEFINED_ITEMS.some(
+          (predefined) =>
+            predefined.name.toLowerCase() === dbItem.item_name.toLowerCase()
+        )
+    );
+
+    setInventory([...mergedInventory, ...extraItems]);
     setLoading(false);
   };
 
@@ -69,32 +131,26 @@ const LiveInventory = ({ kioskId }: LiveInventoryProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {inventory.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            No items in inventory yet
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Sweet</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Status</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Item Name</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {inventory.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">{item.item_name}</TableCell>
+                <TableCell>{item.stock}</TableCell>
+                <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
+                <TableCell>{getStatusBadge(item)}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inventory.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.item_name}</TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell>₹{Number(item.price).toFixed(2)}</TableCell>
-                  <TableCell>{getStatusBadge(item)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
