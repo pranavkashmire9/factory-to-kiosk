@@ -29,6 +29,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const [recentImages, setRecentImages] = useState<ClockImage[]>([]);
   const [cameraOpen, setCameraOpen] = useState<"in" | "out" | null>(null);
   const [capturedImage, setCapturedImage] = useState<CapturedImage | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -62,6 +63,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
 
   const openCamera = async (type: "in" | "out") => {
     try {
+      setVideoReady(false);
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "user" },
         audio: false 
@@ -71,6 +73,11 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+          setVideoReady(true);
+          console.log("Video stream ready");
+        };
       }
     } catch (error: any) {
       console.error("Camera access error:", error);
@@ -86,24 +93,48 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    console.log("Capture photo clicked");
+    
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("Video or canvas ref not available");
+      toast.error("Camera not ready");
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error("Video dimensions are 0");
+      toast.error("Camera not ready, please wait");
+      return;
+    }
 
-    if (!context) return;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      console.error("Could not get canvas context");
+      return;
+    }
+
+    // Record timestamp when capture button is clicked
+    const timestamp = new Date().toISOString();
+    console.log("Capturing photo at timestamp:", timestamp);
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    
     canvas.toBlob((blob) => {
       if (blob) {
-        const dataUrl = canvas.toDataURL("image/jpeg");
-        const timestamp = new Date().toISOString();
+        console.log("Photo captured successfully with timestamp:", timestamp);
         setCapturedImage({ blob, dataUrl, timestamp });
         stopCamera();
+        setVideoReady(false);
+      } else {
+        console.error("Failed to create blob");
+        toast.error("Failed to capture photo");
       }
     }, "image/jpeg", 0.9);
   };
@@ -156,6 +187,7 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
     stopCamera();
     setCameraOpen(null);
     setCapturedImage(null);
+    setVideoReady(false);
   };
 
   const handleClock = async (type: "in" | "out") => {
@@ -310,9 +342,10 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
                   onClick={capturePhoto}
                   className="w-full"
                   size="lg"
+                  disabled={!videoReady}
                 >
                   <Camera className="h-5 w-5 mr-2" />
-                  Capture Photo
+                  {videoReady ? "Capture Photo" : "Loading camera..."}
                 </Button>
               </>
             ) : (
