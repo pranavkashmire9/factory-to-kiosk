@@ -50,6 +50,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_url: string | null
           name: string
           price: number
           status: string
@@ -59,6 +60,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           name: string
           price: number
           status?: string
@@ -68,6 +70,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           price?: number
           status?: string
@@ -80,6 +83,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_url: string | null
           item_name: string
           kiosk_id: string
           price: number
@@ -90,6 +94,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           item_name: string
           kiosk_id: string
           price: number
@@ -100,6 +105,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          image_url?: string | null
           item_name?: string
           kiosk_id?: string
           price?: number

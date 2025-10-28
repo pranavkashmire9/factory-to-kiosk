@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Package } from "lucide-react";
+import { Package, ImageIcon } from "lucide-react";
 
 interface LiveInventoryProps {
   kioskId: string;
@@ -146,7 +146,18 @@ const LiveInventory = ({ kioskId }: LiveInventoryProps) => {
               <TableBody>
                 {inventory.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium text-xs sm:text-sm">{item.item_name}</TableCell>
+                    <TableCell className="font-medium text-xs sm:text-sm">
+                      <div className="flex items-center gap-2">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.item_name} className="h-6 w-6 sm:h-8 sm:w-8 rounded object-cover" />
+                        ) : (
+                          <div className="h-6 w-6 sm:h-8 sm:w-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                            <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span>{item.item_name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-xs sm:text-sm">{item.stock}</TableCell>
                     <TableCell className="text-xs sm:text-sm">₹{Number(item.price).toFixed(0)}</TableCell>
                     <TableCell>{getStatusBadge(item)}</TableCell>

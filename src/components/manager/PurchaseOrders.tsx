@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, Plus, Trash2, ImageIcon } from "lucide-react";
 
 const PurchaseOrders = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -28,7 +28,7 @@ const PurchaseOrders = () => {
   const fetchOrders = async () => {
     const today = new Date().toISOString().split('T')[0];
     
-    const { data, error } = await supabase
+    const { data: orders, error } = await supabase
       .from("purchase_orders")
       .select(`
         *,
@@ -41,9 +41,29 @@ const PurchaseOrders = () => {
     if (error) {
       toast.error("Error fetching purchase orders");
       console.error(error);
-    } else {
-      setOrders(data || []);
+      setLoading(false);
+      return;
     }
+
+    // Fetch factory inventory images
+    const { data: inventory } = await supabase
+      .from("factory_inventory")
+      .select("name, image_url");
+
+    const imageMap = new Map(inventory?.map(item => [item.name, item.image_url]) || []);
+
+    // Enrich orders with image URLs
+    const enrichedOrders = orders?.map(order => ({
+      ...order,
+      items: Array.isArray(order.items) 
+        ? order.items.map((item: any) => ({
+            ...item,
+            image_url: imageMap.get(item.name)
+          }))
+        : []
+    })) || [];
+
+    setOrders(enrichedOrders);
     setLoading(false);
   };
 
@@ -207,10 +227,19 @@ const PurchaseOrders = () => {
                     {order.profiles?.kiosk_name || "Unknown"}
                   </TableCell>
                   <TableCell>
-                    <div className="text-sm">
+                    <div className="text-sm space-y-1">
                       {Array.isArray(order.items) ? 
                         order.items.map((item: any, idx: number) => (
-                          <div key={idx}>{item.name} ({item.quantity})</div>
+                          <div key={idx} className="flex items-center gap-2">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt={item.name} className="h-6 w-6 rounded object-cover" />
+                            ) : (
+                              <div className="h-6 w-6 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span>{item.name} ({item.quantity})</span>
+                          </div>
                         ))
                         : "No items"
                       }

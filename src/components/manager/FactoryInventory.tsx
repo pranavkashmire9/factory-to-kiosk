@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Send, Trash2, BarChart3 } from "lucide-react";
+import { Plus, Pencil, Send, Trash2, BarChart3, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -343,7 +343,18 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
           <TableBody>
             {inventory.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt={item.name} className="h-8 w-8 rounded object-cover" />
+                    ) : (
+                      <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span>{item.name}</span>
+                  </div>
+                </TableCell>
                 <TableCell>∞</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

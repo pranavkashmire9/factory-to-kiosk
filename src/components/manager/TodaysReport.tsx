@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface OrderBreakdown {
@@ -12,6 +12,7 @@ interface OrderBreakdown {
   paymentType: string;
   time: string;
   revenue: number;
+  imageUrl?: string;
 }
 
 const TodaysReport = () => {
@@ -93,6 +94,14 @@ const TodaysReport = () => {
       return;
     }
 
+    // Fetch item images from kiosk inventory
+    const { data: inventory } = await supabase
+      .from("kiosk_inventory")
+      .select("item_name, image_url")
+      .eq("kiosk_id", kioskId);
+
+    const imageMap = new Map(inventory?.map(item => [item.item_name, item.image_url]) || []);
+
     const breakdown: OrderBreakdown[] = [];
     
     orders?.forEach(order => {
@@ -103,6 +112,7 @@ const TodaysReport = () => {
           paymentType: order.payment_type,
           time: new Date(order.timestamp).toLocaleTimeString(),
           revenue: item.price * item.quantity,
+          imageUrl: imageMap.get(item.name),
         });
       });
     });
@@ -203,7 +213,18 @@ const TodaysReport = () => {
               <TableBody>
                 {breakdownData.map((item, idx) => (
                   <TableRow key={idx}>
-                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.itemName} className="h-8 w-8 rounded object-cover" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span>{item.itemName}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{item.paymentType}</TableCell>
                     <TableCell>{item.time}</TableCell>
                     <TableCell className="text-primary font-semibold">
