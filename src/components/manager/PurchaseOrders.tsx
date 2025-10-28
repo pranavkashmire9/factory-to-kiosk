@@ -277,7 +277,7 @@ const PurchaseOrders = () => {
                     <SelectContent>
                       {factoryInventory.map((inv) => (
                         <SelectItem key={inv.id} value={inv.name}>
-                          {inv.name} (Stock: {inv.stock})
+                          {inv.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
