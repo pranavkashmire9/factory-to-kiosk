@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, TruckIcon, Clock, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import FactoryInventory from "@/components/manager/FactoryInventory";
 import PurchaseOrders from "@/components/manager/PurchaseOrders";
 import TodaysReport from "@/components/manager/TodaysReport";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -171,7 +174,7 @@ const ManagerDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{t('common.loading')}</div>
       </div>
     );
   }
@@ -181,65 +184,68 @@ const ManagerDashboard = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Factory Manager Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('manager.dashboard')}</h1>
             <p className="text-muted-foreground">{currentDate}</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut}>Sign Out</Button>
+          <div className="flex gap-2">
+            <LanguageSelector />
+            <Button variant="outline" onClick={handleSignOut}>{t('common.signOut')}</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="border-primary/20 hover:border-primary/40 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('manager.totalRevenue')}</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-primary">₹{stats.totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Today's earnings</p>
+              <p className="text-xs text-muted-foreground">{t('manager.todayEarnings')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('manager.totalOrders')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalOrders}</div>
-              <p className="text-xs text-muted-foreground">All kiosks</p>
+              <p className="text-xs text-muted-foreground">{t('manager.allKiosks')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Stocks</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('manager.totalStocks')}</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalStocks}</div>
-              <p className="text-xs text-muted-foreground">Across all kiosks</p>
+              <p className="text-xs text-muted-foreground">{t('manager.acrossAllKiosks')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Production</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('manager.pendingProduction')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.pendingProduction}</div>
-              <p className="text-xs text-muted-foreground">In preparing state</p>
+              <p className="text-xs text-muted-foreground">{t('manager.inPreparingState')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Dispatched</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('manager.totalDispatched')}</CardTitle>
               <TruckIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalDispatched}</div>
-              <p className="text-xs text-muted-foreground">Delivered orders</p>
+              <p className="text-xs text-muted-foreground">{t('manager.deliveredOrders')}</p>
             </CardContent>
           </Card>
         </div>

@@ -1,0 +1,37 @@
+{
+  "common": {
+    "signOut": "साइन आउट",
+    "loading": "लोड हो रहा है..."
+  },
+  "kiosk": {
+    "dashboard": "डैशबोर्ड",
+    "totalRevenue": "कुल राजस्व",
+    "ordersCompleted": "पूर्ण ऑर्डर",
+    "lowStockItems": "कम स्टॉक आइटम",
+    "clockInOut": "क्लॉक इन/आउट",
+    "todayEarnings": "आज की कमाई",
+    "today": "आज",
+    "belowUnits": "10 यूनिट से कम",
+    "notClockedIn": "क्लॉक इन नहीं किया",
+    "tabs": {
+      "sales": "बिक्री",
+      "clock": "क्लॉक",
+      "inventory": "इन्वेंटरी",
+      "orders": "ऑर्डर",
+      "recent": "हाल का"
+    }
+  },
+  "manager": {
+    "dashboard": "फैक्ट्री मैनेजर डैशबोर्ड",
+    "totalRevenue": "कुल राजस्व",
+    "totalOrders": "कुल ऑर्डर",
+    "totalStocks": "कुल स्टॉक",
+    "pendingProduction": "लंबित उत्पादन",
+    "totalDispatched": "कुल प्रेषित",
+    "todayEarnings": "आज की कमाई",
+    "allKiosks": "सभी कियोस्क",
+    "acrossAllKiosks": "सभी कियोस्क में",
+    "inPreparingState": "तैयारी में",
+    "deliveredOrders": "वितरित ऑर्डर"
+  }
+}

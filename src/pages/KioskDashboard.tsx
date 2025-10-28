@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, ShoppingCart, PackageX, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import KioskSales from "@/components/kiosk/KioskSales";
 import ClockInOut from "@/components/kiosk/ClockInOut";
 import LiveInventory from "@/components/kiosk/LiveInventory";
 import KioskPurchaseOrders from "@/components/kiosk/KioskPurchaseOrders";
 import RecentSales from "@/components/kiosk/RecentSales";
+import LanguageSelector from "@/components/LanguageSelector";
 
 const KioskDashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [kioskId, setKioskId] = useState<string>("");
   const [kioskName, setKioskName] = useState("");
@@ -179,7 +182,7 @@ const KioskDashboard = () => {
   if (loading || !kioskId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{t('common.loading')}</div>
       </div>
     );
   }
@@ -189,56 +192,59 @@ const KioskDashboard = () => {
       <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{kioskName} Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{kioskName} {t('kiosk.dashboard')}</h1>
             <p className="text-sm sm:text-base text-muted-foreground">{currentDate}</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="w-full sm:w-auto">Sign Out</Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <LanguageSelector />
+            <Button variant="outline" onClick={handleSignOut} className="flex-1 sm:flex-none">{t('common.signOut')}</Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card className="border-primary/20 hover:border-primary/40 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('kiosk.totalRevenue')}</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold text-primary">₹{stats.totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Today's earnings</p>
+              <p className="text-xs text-muted-foreground">{t('kiosk.todayEarnings')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Orders Completed</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('kiosk.ordersCompleted')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold">{stats.ordersCompleted}</div>
-              <p className="text-xs text-muted-foreground">Today</p>
+              <p className="text-xs text-muted-foreground">{t('kiosk.today')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('kiosk.lowStockItems')}</CardTitle>
               <PackageX className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold">{stats.lowStockItems}</div>
-              <p className="text-xs text-muted-foreground">Below 10 units</p>
+              <p className="text-xs text-muted-foreground">{t('kiosk.belowUnits')}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Clock In/Out</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('kiosk.clockInOut')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-xs sm:text-sm font-medium">
                 {stats.clockIn && <div>In: {new Date(stats.clockIn).toLocaleTimeString()}</div>}
                 {stats.clockOut && <div>Out: {new Date(stats.clockOut).toLocaleTimeString()}</div>}
-                {!stats.clockIn && !stats.clockOut && <div className="text-muted-foreground">Not clocked in</div>}
+                {!stats.clockIn && !stats.clockOut && <div className="text-muted-foreground">{t('kiosk.notClockedIn')}</div>}
               </div>
             </CardContent>
           </Card>
@@ -246,11 +252,11 @@ const KioskDashboard = () => {
 
         <Tabs defaultValue="sales" className="w-full">
           <TabsList className="w-full flex flex-nowrap overflow-x-auto overflow-y-hidden justify-start sm:grid sm:grid-cols-5 h-auto">
-            <TabsTrigger value="sales" className="flex-shrink-0 text-xs sm:text-sm">Sales</TabsTrigger>
-            <TabsTrigger value="clock" className="flex-shrink-0 text-xs sm:text-sm">Clock</TabsTrigger>
-            <TabsTrigger value="inventory" className="flex-shrink-0 text-xs sm:text-sm">Inventory</TabsTrigger>
-            <TabsTrigger value="purchase" className="flex-shrink-0 text-xs sm:text-sm">Orders</TabsTrigger>
-            <TabsTrigger value="recent" className="flex-shrink-0 text-xs sm:text-sm">Recent</TabsTrigger>
+            <TabsTrigger value="sales" className="flex-shrink-0 text-xs sm:text-sm">{t('kiosk.tabs.sales')}</TabsTrigger>
+            <TabsTrigger value="clock" className="flex-shrink-0 text-xs sm:text-sm">{t('kiosk.tabs.clock')}</TabsTrigger>
+            <TabsTrigger value="inventory" className="flex-shrink-0 text-xs sm:text-sm">{t('kiosk.tabs.inventory')}</TabsTrigger>
+            <TabsTrigger value="purchase" className="flex-shrink-0 text-xs sm:text-sm">{t('kiosk.tabs.orders')}</TabsTrigger>
+            <TabsTrigger value="recent" className="flex-shrink-0 text-xs sm:text-sm">{t('kiosk.tabs.recent')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sales">

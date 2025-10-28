@@ -1,0 +1,37 @@
+{
+  "common": {
+    "signOut": "Sign Out",
+    "loading": "Loading..."
+  },
+  "kiosk": {
+    "dashboard": "Dashboard",
+    "totalRevenue": "Total Revenue",
+    "ordersCompleted": "Orders Completed",
+    "lowStockItems": "Low Stock Items",
+    "clockInOut": "Clock In/Out",
+    "todayEarnings": "Today's earnings",
+    "today": "Today",
+    "belowUnits": "Below 10 units",
+    "notClockedIn": "Not clocked in",
+    "tabs": {
+      "sales": "Sales",
+      "clock": "Clock",
+      "inventory": "Inventory",
+      "orders": "Orders",
+      "recent": "Recent"
+    }
+  },
+  "manager": {
+    "dashboard": "Factory Manager Dashboard",
+    "totalRevenue": "Total Revenue",
+    "totalOrders": "Total Orders",
+    "totalStocks": "Total Stocks",
+    "pendingProduction": "Pending Production",
+    "totalDispatched": "Total Dispatched",
+    "todayEarnings": "Today's earnings",
+    "allKiosks": "All kiosks",
+    "acrossAllKiosks": "Across all kiosks",
+    "inPreparingState": "In preparing state",
+    "deliveredOrders": "Delivered orders"
+  }
+}
