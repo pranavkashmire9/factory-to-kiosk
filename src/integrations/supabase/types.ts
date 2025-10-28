@@ -258,6 +258,39 @@ export type Database = {
           },
         ]
       }
+      wastage: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          kiosk_id: string
+          order_id: string
+          quantity: number
+          reason: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          kiosk_id: string
+          order_id: string
+          quantity: number
+          reason: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          kiosk_id?: string
+          order_id?: string
+          quantity?: number
+          reason?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
