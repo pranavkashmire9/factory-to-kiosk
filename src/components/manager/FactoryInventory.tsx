@@ -204,20 +204,23 @@ const FactoryInventory = ({ onUpdate }: FactoryInventoryProps) => {
 
       if (fetchKioskError) {
         console.error("Error fetching kiosk items:", fetchKioskError);
-        toast.error("Failed to sync image to kiosks");
+        toast.error("Failed to sync to kiosks");
       } else if (kioskItems && kioskItems.length > 0) {
-        // Update each matching kiosk inventory item
+        // Update each matching kiosk inventory item with image and price
         const kioskIds = kioskItems.map(item => item.id);
         const { error: kioskError } = await supabase
           .from("kiosk_inventory")
-          .update({ image_url: imageUrl })
+          .update({ 
+            image_url: imageUrl,
+            price: price
+          })
           .in("id", kioskIds);
 
         if (kioskError) {
-          console.error("Error syncing image to kiosks:", kioskError);
-          toast.error("Failed to sync image to kiosks");
+          console.error("Error syncing to kiosks:", kioskError);
+          toast.error("Failed to sync to kiosks");
         } else {
-          console.log(`Synced image to ${kioskItems.length} kiosk inventory items`);
+          console.log(`Synced image and price to ${kioskItems.length} kiosk inventory items`);
         }
       }
 
