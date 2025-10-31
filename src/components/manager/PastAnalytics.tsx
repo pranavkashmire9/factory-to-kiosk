@@ -30,6 +30,7 @@ const PastAnalytics = () => {
   const [analyticsData, setAnalyticsData] = useState<PastAnalyticsData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedBreakdown, setSelectedBreakdown] = useState<PastAnalyticsData | null>(null);
 
   const fetchPastAnalytics = async (selectedDate: Date) => {
     setLoading(true);
@@ -195,16 +196,13 @@ const PastAnalytics = () => {
                     </TableCell>
                     <TableCell>
                       {data.itemBreakdown.length > 0 ? (
-                        <div className="space-y-1 text-sm">
-                          {data.itemBreakdown.map((item, itemIdx) => (
-                            <div key={itemIdx} className="flex justify-between gap-4">
-                              <span className="font-medium">{item.name}</span>
-                              <span className="text-muted-foreground">
-                                {item.quantity}x = ₹{item.revenue.toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedBreakdown(data)}
+                        >
+                          View Breakdown
+                        </Button>
                       ) : (
                         <span className="text-muted-foreground">No items</span>
                       )}
@@ -216,6 +214,46 @@ const PastAnalytics = () => {
           )}
         </div>
       </DialogContent>
+
+      {/* Breakdown Dialog */}
+      <Dialog open={selectedBreakdown !== null} onOpenChange={(open) => !open && setSelectedBreakdown(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Revenue Breakdown - {selectedBreakdown?.kioskName}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedBreakdown && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Total Revenue: <span className="text-primary font-semibold">₹{selectedBreakdown.revenue.toFixed(2)}</span>
+              </div>
+              
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item Name</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedBreakdown.itemBreakdown.map((item, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                      <TableCell className="text-right text-primary font-semibold">
+                        ₹{item.revenue.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
