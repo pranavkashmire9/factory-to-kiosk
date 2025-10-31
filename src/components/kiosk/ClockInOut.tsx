@@ -67,45 +67,61 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
   const openCamera = async (type: "in" | "out") => {
     try {
       setVideoReady(false);
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user" },
-        audio: false 
-      });
-      streamRef.current = stream;
       setCameraOpen(type);
       
+      console.log("Requesting camera access...");
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false 
+      });
+      
+      console.log("Camera access granted, stream obtained");
+      streamRef.current = stream;
+      
+      // Small delay to ensure dialog is rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       if (videoRef.current) {
+        console.log("Attaching stream to video element");
         videoRef.current.srcObject = stream;
         
-        // Wait for video to be ready and play
-        const playVideo = async () => {
-          try {
-            await videoRef.current?.play();
-            setVideoReady(true);
-            console.log("Video stream ready");
-          } catch (playError) {
-            console.error("Video play error:", playError);
-            // Still set ready as stream is available
-            setVideoReady(true);
+        // Wait for video metadata to load
+        await new Promise<void>((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              console.log("Video metadata loaded");
+              resolve();
+            };
           }
-        };
+        });
         
-        videoRef.current.onloadedmetadata = playVideo;
+        // Play the video
+        try {
+          await videoRef.current.play();
+          console.log("Video playing successfully");
+        } catch (playError) {
+          console.warn("Autoplay may be restricted, but stream is ready:", playError);
+        }
         
-        // Fallback: if metadata doesn't load, try playing anyway after a delay
-        setTimeout(() => {
-          if (!videoReady && videoRef.current?.srcObject) {
-            console.log("Fallback: attempting to play video");
-            playVideo();
-          }
-        }, 1000);
+        // Set ready state
+        setVideoReady(true);
+        console.log("Camera ready for capture");
       }
     } catch (error: any) {
       console.error("Camera access error:", error);
-      toast.error(error.name === "NotAllowedError" 
-        ? "Camera permission denied. Please allow camera access." 
-        : "Could not access camera");
+      const errorMessage = error.name === "NotAllowedError" 
+        ? "Camera permission denied. Please allow camera access in your browser settings." 
+        : error.name === "NotFoundError"
+        ? "No camera found on this device."
+        : "Could not access camera. Please check your browser permissions.";
+      
+      toast.error(errorMessage);
       setCameraOpen(null);
+      stopCamera();
     }
   };
 
