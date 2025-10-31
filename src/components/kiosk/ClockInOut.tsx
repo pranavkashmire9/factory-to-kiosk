@@ -76,15 +76,36 @@ const ClockInOut = ({ kioskId, onClockAction }: ClockInOutProps) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-          setVideoReady(true);
-          console.log("Video stream ready");
+        
+        // Wait for video to be ready and play
+        const playVideo = async () => {
+          try {
+            await videoRef.current?.play();
+            setVideoReady(true);
+            console.log("Video stream ready");
+          } catch (playError) {
+            console.error("Video play error:", playError);
+            // Still set ready as stream is available
+            setVideoReady(true);
+          }
         };
+        
+        videoRef.current.onloadedmetadata = playVideo;
+        
+        // Fallback: if metadata doesn't load, try playing anyway after a delay
+        setTimeout(() => {
+          if (!videoReady && videoRef.current?.srcObject) {
+            console.log("Fallback: attempting to play video");
+            playVideo();
+          }
+        }, 1000);
       }
     } catch (error: any) {
       console.error("Camera access error:", error);
-      toast.error("Could not access camera");
+      toast.error(error.name === "NotAllowedError" 
+        ? "Camera permission denied. Please allow camera access." 
+        : "Could not access camera");
+      setCameraOpen(null);
     }
   };
 
