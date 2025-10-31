@@ -27,7 +27,7 @@ const PastAnalytics = () => {
   const fetchPastAnalytics = async (selectedDate: Date) => {
     setLoading(true);
     setHasSearched(true);
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
     
     try {
       // Get all kiosks
