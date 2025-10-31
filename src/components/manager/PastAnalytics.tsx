@@ -68,6 +68,7 @@ const PastAnalytics = () => {
           .select("item_name, image_url")
           .eq("kiosk_id", kiosk.id);
 
+        console.log(`Inventory for ${kiosk.kiosk_name}:`, inventory);
         const imageMap = new Map(inventory?.map(item => [item.item_name, item.image_url]) || []);
 
         // Calculate item breakdown
@@ -85,8 +86,9 @@ const PastAnalytics = () => {
                 name: item.name,
                 quantity: Number(item.quantity),
                 revenue: itemRevenue,
-                imageUrl: imageMap.get(item.name)
+                imageUrl: imageMap.get(item.name) || undefined
               });
+              console.log(`Item: ${item.name}, Image URL: ${imageMap.get(item.name)}`);
             }
           });
         });
