@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, TrendingUp, Eye } from "lucide-react";
+import { CalendarIcon, TrendingUp, Eye, ImageIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ interface ItemBreakdown {
   name: string;
   quantity: number;
   revenue: number;
+  imageUrl?: string;
 }
 
 interface PastAnalyticsData {
@@ -61,6 +62,14 @@ const PastAnalytics = () => {
 
         const revenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
 
+        // Fetch item images from kiosk inventory
+        const { data: inventory } = await supabase
+          .from("kiosk_inventory")
+          .select("item_name, image_url")
+          .eq("kiosk_id", kiosk.id);
+
+        const imageMap = new Map(inventory?.map(item => [item.item_name, item.image_url]) || []);
+
         // Calculate item breakdown
         const itemMap = new Map<string, ItemBreakdown>();
         orders?.forEach(order => {
@@ -75,7 +84,8 @@ const PastAnalytics = () => {
               itemMap.set(item.name, {
                 name: item.name,
                 quantity: Number(item.quantity),
-                revenue: itemRevenue
+                revenue: itemRevenue,
+                imageUrl: imageMap.get(item.name)
               });
             }
           });
@@ -242,7 +252,18 @@ const PastAnalytics = () => {
                 <TableBody>
                   {selectedBreakdown.itemBreakdown.map((item, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.name} className="h-8 w-8 rounded object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span>{item.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
                       <TableCell className="text-right text-primary font-semibold">
                         ₹{item.revenue.toFixed(2)}
