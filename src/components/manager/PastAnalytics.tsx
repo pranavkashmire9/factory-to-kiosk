@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, TrendingUp } from "lucide-react";
+import { CalendarIcon, TrendingUp, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -201,7 +201,8 @@ const PastAnalytics = () => {
                           size="sm"
                           onClick={() => setSelectedBreakdown(data)}
                         >
-                          View Breakdown
+                          <Eye className="h-4 w-4 mr-2" />
+                          Breakdown
                         </Button>
                       ) : (
                         <span className="text-muted-foreground">No items</span>
