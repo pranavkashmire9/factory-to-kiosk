@@ -10,11 +10,18 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
+interface ItemBreakdown {
+  name: string;
+  quantity: number;
+  revenue: number;
+}
+
 interface PastAnalyticsData {
   kioskName: string;
   revenue: number;
   clockIn: string;
   clockOut: string;
+  itemBreakdown: ItemBreakdown[];
 }
 
 const PastAnalytics = () => {
@@ -44,14 +51,35 @@ const PastAnalytics = () => {
 
       // Get data for each kiosk for the selected date
       const analyticsPromises = kiosks.map(async (kiosk) => {
-        // Get revenue
+        // Get revenue and items
         const { data: orders } = await supabase
           .from("orders")
-          .select("total")
+          .select("total, items")
           .eq("kiosk_id", kiosk.id)
           .eq("date", dateStr);
 
         const revenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+
+        // Calculate item breakdown
+        const itemMap = new Map<string, ItemBreakdown>();
+        orders?.forEach(order => {
+          const items = order.items as any[];
+          items?.forEach((item: any) => {
+            const existing = itemMap.get(item.name);
+            const itemRevenue = Number(item.price) * Number(item.quantity);
+            if (existing) {
+              existing.quantity += Number(item.quantity);
+              existing.revenue += itemRevenue;
+            } else {
+              itemMap.set(item.name, {
+                name: item.name,
+                quantity: Number(item.quantity),
+                revenue: itemRevenue
+              });
+            }
+          });
+        });
+        const itemBreakdown = Array.from(itemMap.values()).sort((a, b) => b.revenue - a.revenue);
 
         // Get clock times
         const { data: clockLogs } = await supabase
@@ -70,6 +98,7 @@ const PastAnalytics = () => {
           revenue,
           clockIn: clockIn ? new Date(clockIn).toLocaleTimeString() : "-",
           clockOut: clockOut ? new Date(clockOut).toLocaleTimeString() : "-",
+          itemBreakdown,
         };
       });
 
@@ -152,6 +181,7 @@ const PastAnalytics = () => {
                   <TableHead>{t('manager.clockInTime')}</TableHead>
                   <TableHead>{t('manager.clockOutTime')}</TableHead>
                   <TableHead>{t('manager.totalRevenue')}</TableHead>
+                  <TableHead>Breakdown</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,6 +192,22 @@ const PastAnalytics = () => {
                     <TableCell>{data.clockOut}</TableCell>
                     <TableCell className="text-primary font-semibold">
                       ₹{data.revenue.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {data.itemBreakdown.length > 0 ? (
+                        <div className="space-y-1 text-sm">
+                          {data.itemBreakdown.map((item, itemIdx) => (
+                            <div key={itemIdx} className="flex justify-between gap-4">
+                              <span className="font-medium">{item.name}</span>
+                              <span className="text-muted-foreground">
+                                {item.quantity}x = ₹{item.revenue.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No items</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
